@@ -1,0 +1,5 @@
+{
+  "name": "Cryptogram Master",
+  "description": "A word completion game where each letter is represented by a number. Decode famous quotes by mapping numbers to letters and complete the puzzle with minimal mistakes.",
+  "requestFramePermissions": []
+}
