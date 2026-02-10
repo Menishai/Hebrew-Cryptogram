@@ -161,12 +161,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </div>
           
           <a 
-            href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות באלוף הצופן" 
-            className="flex items-center justify-center gap-2 py-3 text-slate-400 hover:text-blue-500 transition-colors text-sm font-bold border-2 border-dashed border-slate-200 rounded-2xl"
+            href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות כתיב באלוף הצופן" 
+            className="flex items-center justify-center gap-2 py-3.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all text-sm font-bold border-2 border-dashed border-slate-200 rounded-2xl active:scale-95"
           >
-            <i className="fa-solid fa-bug"></i>
-            מצאת טעות? דווח לנו
+            <i className="fa-solid fa-pen-nib"></i>
+            מצאת טעות כתיב? דווח לנו
           </a>
+
+          <div className="text-center pt-2">
+            <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Designed for Cryptogram Master Elite</p>
+          </div>
         </div>
       </div>
     </div>

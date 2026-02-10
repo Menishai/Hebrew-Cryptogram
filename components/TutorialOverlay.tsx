@@ -16,7 +16,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) => {
       color: "text-yellow-500",
       bg: "bg-yellow-50",
       example: (
-        <div className="flex gap-2 mt-4 animate-bounce">
+        <div className="flex gap-2 animate-bounce">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xl">א</div>
           <div className="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center text-white font-black text-xl">ל</div>
           <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center text-white font-black text-xl">ו</div>
@@ -31,19 +31,19 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) => {
       color: "text-blue-500",
       bg: "bg-blue-50",
       example: (
-        <div className="flex flex-col items-center gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <div className="flex flex-col items-center gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 w-full">
           <div className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className="w-12 h-14 bg-white border-2 border-blue-500 rounded-xl flex items-center justify-center text-blue-600 font-black text-2xl shadow-sm">א</div>
+              <div className="w-10 h-12 bg-white border-2 border-blue-500 rounded-xl flex items-center justify-center text-blue-600 font-black text-xl shadow-sm">א</div>
               <span className="text-[10px] font-black text-blue-600 mt-1">12</span>
             </div>
             <div className="flex items-center text-slate-300"><i className="fa-solid fa-arrow-left"></i></div>
             <div className="flex flex-col items-center">
-              <div className="w-12 h-14 bg-white border-2 border-slate-200 rounded-xl flex items-center justify-center text-slate-300 font-black text-2xl opacity-40">?</div>
+              <div className="w-10 h-12 bg-white border-2 border-slate-200 rounded-xl flex items-center justify-center text-slate-300 font-black text-xl opacity-40">?</div>
               <span className="text-[10px] font-black text-slate-400 mt-1">12</span>
             </div>
           </div>
-          <span className="text-[10px] text-slate-400 font-bold">ניחוש אחד מעדכן את כל המספרים הזהים!</span>
+          <span className="text-[9px] text-slate-400 font-bold">ניחוש אחד מעדכן את כל המספרים הזהים!</span>
         </div>
       )
     },
@@ -106,7 +106,9 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/60 transition-all duration-500" dir="rtl" style={{ fontSize: '16px' }}>
-      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col items-center text-center relative overflow-hidden border-b-8 border-blue-500">
+      {/* Main Container - Fixed Size */}
+      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-md w-full h-[580px] md:h-[620px] shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col items-center text-center relative overflow-hidden border-b-8 border-blue-500">
+        
         {/* Close Button */}
         <button 
           onClick={onComplete}
@@ -124,21 +126,31 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) => {
           />
         </div>
 
-        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-6 text-3xl shadow-sm ${current.bg} ${current.color} transition-all duration-300`}>
-          <i className={`fa-solid ${current.icon}`}></i>
+        {/* Content Section - Stable Layout */}
+        <div className="flex flex-col items-center w-full flex-1">
+          {/* Icon Area - Fixed Height */}
+          <div className="h-24 flex items-center justify-center mt-2">
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl shadow-sm ${current.bg} ${current.color} transition-all duration-300`}>
+              <i className={`fa-solid ${current.icon}`}></i>
+            </div>
+          </div>
+
+          {/* Title & Description Area - Fixed Min Height to avoid jumping */}
+          <div className="min-h-[140px] flex flex-col items-center mt-4">
+            <h2 className="text-2xl font-black text-slate-800 mb-3">{current.title}</h2>
+            <p className="text-slate-500 text-sm md:text-base leading-relaxed font-medium px-2">
+              {current.description}
+            </p>
+          </div>
+
+          {/* Visual Example Area - Fixed Height */}
+          <div className="w-full h-32 flex items-center justify-center mt-4">
+             {current.example}
+          </div>
         </div>
 
-        <h2 className="text-2xl font-black text-slate-800 mb-3">{current.title}</h2>
-        <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-6 font-medium px-2">
-          {current.description}
-        </p>
-
-        {/* Visual Example Container */}
-        <div className="mb-8 w-full h-24 flex items-center justify-center">
-           {current.example}
-        </div>
-
-        <div className="w-full flex flex-col gap-3">
+        {/* Bottom Section - Action Buttons */}
+        <div className="w-full mt-auto flex flex-col gap-3">
           <button
             onClick={nextStep}
             className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3"
@@ -151,24 +163,28 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) => {
             ) : "המשך"}
           </button>
           
-          {step > 0 && (
-            <button
-              onClick={() => setStep(step - 1)}
-              className="text-slate-400 font-bold hover:text-slate-600 transition-colors py-2 text-sm"
-            >
-              חזור
-            </button>
-          )}
+          <div className="h-8 flex items-center justify-center">
+            {step > 0 ? (
+              <button
+                onClick={() => setStep(step - 1)}
+                className="text-slate-400 font-bold hover:text-slate-600 transition-colors text-sm"
+              >
+                חזור
+              </button>
+            ) : null}
+          </div>
+
+          {/* Step Indicators */}
+          <div className="flex gap-1.5 justify-center mb-2">
+            {steps.map((_, i) => (
+              <div 
+                key={i} 
+                className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-6 bg-blue-500' : 'w-1.5 bg-slate-200'}`}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="mt-8 flex gap-1.5">
-          {steps.map((_, i) => (
-            <div 
-              key={i} 
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-6 bg-blue-500' : 'w-1.5 bg-slate-200'}`}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );

@@ -15,6 +15,8 @@ import HintModal from './components/HintModal';
 import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 
+const APP_VERSION = '2.1.0';
+
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
   [Difficulty.MEDIUM]: { numRevealed: 0, maxMistakes: 5, hints: 2 },
@@ -29,6 +31,7 @@ const STORAGE_KEYS = {
   VIBRATION: 'cryptogram-vibration',
   SOUND: 'cryptogram-sound',
   FONT_SIZE: 'cryptogram-font-size',
+  LAST_SCREEN: 'cryptogram-last-screen',
 };
 
 const MAX_USED_QUOTES_HISTORY = 200;
@@ -150,7 +153,15 @@ const App: React.FC = () => {
     if (!saved) return initialStats;
     try {
       const parsed = JSON.parse(saved);
-      return { ...initialStats, ...parsed };
+      // Basic migration / validation to ensure we never lose data when updating types
+      return { 
+        ...initialStats, 
+        ...parsed,
+        hintsRemaining: parsed.hintsRemaining !== undefined ? parsed.hintsRemaining : initialStats.hintsRemaining,
+        currentLevel: parsed.currentLevel || 1,
+        usedQuotes: Array.isArray(parsed.usedQuotes) ? parsed.usedQuotes : [],
+        claimedAchievements: Array.isArray(parsed.claimedAchievements) ? parsed.claimedAchievements : []
+      };
     } catch {
       return initialStats;
     }
@@ -168,34 +179,85 @@ const App: React.FC = () => {
     isAuthorRevealed: false
   });
 
+  // Persistent storage helpers for Atomic updates
+  const persistStats = (newStats: Statistics) => {
+    localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(newStats));
+  };
+
+  const persistGameState = (data: { levelData: GameLevel, userState: UserState, difficulty: Difficulty, history: UserState[] }) => {
+    localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(data));
+  };
+
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DIFFICULTY, difficultySetting); }, [difficultySetting]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize); }, [fontSize]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.VIBRATION, String(vibrationEnabled)); }, [vibrationEnabled]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SOUND, String(soundEnabled)); }, [soundEnabled]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats)); }, [stats]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.LAST_SCREEN, currentScreen); }, [currentScreen]);
+  
+  // Stats secondary backup
+  useEffect(() => { persistStats(stats); }, [stats]);
 
+  // Main game state persistence hook
   useEffect(() => {
     if (currentScreen === Screen.PLAYING && levelData && status === GameStatus.PLAYING) {
-      localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify({ levelData, userState, difficulty: currentLevelDifficulty }));
+      persistGameState({ levelData, userState, difficulty: currentLevelDifficulty, history });
     }
-  }, [currentScreen, levelData, userState, currentLevelDifficulty, status]);
+  }, [currentScreen, levelData, userState, currentLevelDifficulty, status, history]);
+
+  // Auto-resume logic on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
+    const lastScreen = localStorage.getItem(STORAGE_KEYS.LAST_SCREEN);
+    if (saved && (lastScreen === Screen.PLAYING)) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.levelData && parsed.userState) {
+          setLevelData(parsed.levelData);
+          setUserState(parsed.userState);
+          setCurrentLevelDifficulty(parsed.difficulty);
+          setHistory(parsed.history || []);
+          setCurrentScreen(Screen.PLAYING);
+          setStatus(GameStatus.PLAYING);
+        }
+      } catch (e) {
+        console.error("Auto-resume failed", e);
+      }
+    }
+  }, []);
 
   const hasUnclaimedAchievements = useMemo(() => {
+    const uniqueAuthorsCount = new Set(stats.usedQuotes.map(q => q.author)).size;
+    const challengeWins = (stats.hardWinsCount || 0) + (stats.veryHardWinsCount || 0);
+    
     const milestones = [
       { id: 'streak_3', achieved: stats.bestStreak >= 3 },
-      { id: 'streak_6', achieved: stats.bestStreak >= 6 },
-      { id: 'streak_12', achieved: stats.bestStreak >= 12 },
-      { id: 'streak_25', achieved: stats.bestStreak >= 25 },
-      { id: 'level_10', achieved: stats.currentLevel >= 10 },
-      { id: 'level_30', achieved: stats.currentLevel >= 30 },
-      { id: 'level_60', achieved: stats.currentLevel >= 60 },
-      { id: 'level_100', achieved: stats.currentLevel >= 100 },
+      { id: 'streak_7', achieved: stats.bestStreak >= 7 },
+      { id: 'streak_15', achieved: stats.bestStreak >= 15 },
+      { id: 'streak_30', achieved: stats.bestStreak >= 30 },
+      { id: 'streak_50', achieved: stats.bestStreak >= 50 },
+      { id: 'level_10', achieved: (stats.currentLevel - 1) >= 10 },
+      { id: 'level_25', achieved: (stats.currentLevel - 1) >= 25 },
+      { id: 'level_50', achieved: (stats.currentLevel - 1) >= 50 },
+      { id: 'level_100', achieved: (stats.currentLevel - 1) >= 100 },
+      { id: 'level_250', achieved: (stats.currentLevel - 1) >= 250 },
       { id: 'perfect_1', achieved: (stats.perfectGames || 0) >= 1 },
-      { id: 'perfect_10', achieved: (stats.perfectGames || 0) >= 10 },
-      { id: 'perfect_25', achieved: (stats.perfectGames || 0) >= 25 },
+      { id: 'perfect_5', achieved: (stats.perfectGames || 0) >= 5 },
+      { id: 'perfect_20', achieved: (stats.perfectGames || 0) >= 20 },
       { id: 'perfect_50', achieved: (stats.perfectGames || 0) >= 50 },
+      { id: 'perfect_100', achieved: (stats.perfectGames || 0) >= 100 },
       { id: 'total_10', achieved: stats.gamesWon >= 10 },
+      { id: 'total_25', achieved: stats.gamesWon >= 25 },
       { id: 'total_50', achieved: stats.gamesWon >= 50 },
+      { id: 'total_100', achieved: stats.gamesWon >= 100 },
+      { id: 'total_250', achieved: stats.gamesWon >= 250 },
+      { id: 'diff_5', achieved: challengeWins >= 5 },
+      { id: 'diff_15', achieved: challengeWins >= 15 },
+      { id: 'diff_30', achieved: challengeWins >= 30 },
+      { id: 'diff_60', achieved: challengeWins >= 60 },
+      { id: 'coll_5', achieved: uniqueAuthorsCount >= 5 },
+      { id: 'coll_15', achieved: uniqueAuthorsCount >= 15 },
+      { id: 'coll_40', achieved: uniqueAuthorsCount >= 40 },
+      { id: 'coll_80', achieved: uniqueAuthorsCount >= 80 },
     ];
     return milestones.some(m => m.achieved && !stats.claimedAchievements.includes(m.id));
   }, [stats]);
@@ -251,6 +313,7 @@ const App: React.FC = () => {
         newStats.gamesLost += 1;
         newStats.currentStreak = 0;
       }
+      persistStats(newStats);
       return newStats;
     });
     localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
@@ -261,22 +324,16 @@ const App: React.FC = () => {
       if (prev.claimedAchievements.includes(id)) return prev;
       const newHints = prev.hintsRemaining + 1;
       
-      setUserState(currentU => ({ ...currentU, hintsRemaining: newHints }));
-      
-      const saved = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          parsed.userState.hintsRemaining = newHints;
-          localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(parsed));
-        } catch (e) { console.error("Failed to sync claim with storage", e); }
-      }
-
-      return {
+      const updatedStats = {
         ...prev,
         hintsRemaining: newHints,
         claimedAchievements: [...prev.claimedAchievements, id]
       };
+      
+      setUserState(currentU => ({ ...currentU, hintsRemaining: newHints }));
+      persistStats(updatedStats);
+      
+      return updatedStats;
     });
     playSound('hint');
   };
@@ -309,8 +366,14 @@ const App: React.FC = () => {
     setHistory(prev => [...prev.slice(0, -1)]);
     
     const newHints = userState.hintsRemaining - 1;
-    setUserState({ ...lastState, hintsRemaining: newHints });
-    setStats(prev => ({ ...prev, hintsRemaining: newHints }));
+    const newState = { ...lastState, hintsRemaining: newHints };
+    
+    setUserState(newState);
+    setStats(prev => {
+      const u = { ...prev, hintsRemaining: newHints };
+      persistStats(u);
+      return u;
+    });
     
     setIsHintMode(false);
     playSound('undo');
@@ -399,7 +462,7 @@ const App: React.FC = () => {
       }
     }
 
-    setUserState({
+    const initialUserState: UserState = {
       score: 0,
       mistakes: 0,
       maxMistakes: config.maxMistakes,
@@ -409,8 +472,11 @@ const App: React.FC = () => {
       cellFeedback: {},
       currentLevel: stats.currentLevel || 1,
       isAuthorRevealed: false
-    });
+    };
+
+    setUserState(initialUserState);
     setStatus(GameStatus.PLAYING);
+    persistGameState({ levelData: newLevel, userState: initialUserState, difficulty: diff, history: [] });
   }, [stats.currentLevel, stats.hintsRemaining]);
 
   const startNewGame = useCallback(async (forcedDifficulty?: Difficulty) => {
@@ -459,7 +525,11 @@ const App: React.FC = () => {
     
     playSound('hint');
     const newHints = userState.hintsRemaining - 1;
-    setStats(s => ({ ...s, hintsRemaining: newHints }));
+    setStats(s => {
+      const n = { ...s, hintsRemaining: newHints };
+      persistStats(n);
+      return n;
+    });
     setUserState(prev => ({
       ...prev,
       isAuthorRevealed: true,
@@ -479,7 +549,11 @@ const App: React.FC = () => {
     if (vibrationEnabled && navigator.vibrate) navigator.vibrate(50);
     
     const newHints = userState.hintsRemaining - 1;
-    setStats(s => ({ ...s, hintsRemaining: newHints }));
+    setStats(s => {
+      const n = { ...s, hintsRemaining: newHints };
+      persistStats(n);
+      return n;
+    });
     
     setUserState(prev => {
       const newGuesses = { ...prev.cellGuesses, [idx]: levelData.quote[idx] };
@@ -514,18 +588,22 @@ const App: React.FC = () => {
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
-    setStats(prev => ({ ...prev, hasCompletedTutorial: true }));
+    setStats(prev => {
+      const n = { ...prev, hasCompletedTutorial: true };
+      persistStats(n);
+      return n;
+    });
   };
 
   const continueGame = useCallback(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
     if (saved) {
       try {
-        const { levelData: savedLevel, userState: savedUserState, difficulty: savedDiff } = JSON.parse(saved);
+        const { levelData: savedLevel, userState: savedUserState, difficulty: savedDiff, history: savedHistory } = JSON.parse(saved);
         setLevelData(savedLevel);
         setUserState(savedUserState);
         setCurrentLevelDifficulty(savedDiff);
-        setHistory([]);
+        setHistory(savedHistory || []);
         setCurrentScreen(Screen.PLAYING);
         setStatus(GameStatus.PLAYING);
         setIsOverlayVisible(true);
@@ -605,10 +683,10 @@ const App: React.FC = () => {
     
     if (levelData.revealedIndices.includes(idx)) return;
     
-    setHistory(prev => [...prev, userState]);
     const correctChar = levelData.quote[idx];
     
     if (normalizeHebrewChar(correctChar) === normalizeHebrewChar(letter)) {
+      setHistory(prev => [...prev, userState]);
       setUserState(prev => {
         const newGuesses = { ...prev.cellGuesses, [idx]: levelData.quote[idx] };
         const newFeedback = { ...prev.cellFeedback, [idx]: 'pop-active' as const };
@@ -775,6 +853,18 @@ const App: React.FC = () => {
                   <i className="fa-solid fa-arrow-left"></i>
                   <span>{status === GameStatus.WON ? 'לשלב הבא' : 'נסה שוב'}</span>
                 </button>
+              </div>
+            )}
+            
+            {status === GameStatus.PLAYING && (
+              <div className="mt-auto pt-12 pb-4 opacity-40 hover:opacity-100 transition-opacity">
+                 <a 
+                    href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות כתיב באלוף הצופן" 
+                    className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 border border-slate-200 border-dashed px-3 py-1 rounded-full transition-colors hover:bg-slate-100"
+                 >
+                    <i className="fa-solid fa-pen-nib"></i>
+                    מצאת טעות כתיב?
+                 </a>
               </div>
             )}
           </main>
