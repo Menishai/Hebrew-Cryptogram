@@ -62,8 +62,8 @@ const BoardCell: React.FC<BoardCellProps> = ({
     // If it has a letter, use a strong light blue so black text is readable.
     // If it's empty, use dark blue for a "focused cursor" effect.
     containerClasses = userLetter
-      ? 'animate-select-pulse bg-blue-200 border-blue-600 shadow-xl z-20 scale-110 ring-4 ring-blue-200'
-      : 'animate-select-pulse bg-blue-600 border-blue-800 shadow-xl z-20 scale-110 ring-4 ring-blue-200';
+      ? 'animate-select-pulse bg-blue-200 border-blue-600 shadow-xl z-20 scale-120 ring-4 ring-blue-200'
+      : 'animate-select-pulse bg-blue-600 border-blue-800 shadow-xl z-20 scale-120 ring-4 ring-blue-200';
   } else if (isCompleted) {
     containerClasses = 'bg-green-50/40 border-green-100';
   } else if (isHintMode && !userLetter) {
@@ -107,10 +107,10 @@ const BoardCell: React.FC<BoardCellProps> = ({
            (isSameNumAsSelected ? 'bg-blue-400 shadow-sm' : 'bg-slate-200 group-hover:bg-slate-300'))))
       }`}></div>
 
-      {/* Number label below the cell */}
-      <span className={`text-[8px] md:text-[10px] mt-0.5 md:mt-1.5 font-black h-3 md:h-4 transition-all duration-300 ${
-        (isSelected && !isHintMode) ? 'text-blue-900 scale-125 font-black' : 
-        (isSameNumAsSelected ? 'text-blue-600 font-extrabold scale-110' : 'text-slate-400')
+      {/* Number label below the cell - Increased base size and scale */}
+      <span className={`text-[11px] md:text-[13px] mt-0.5 md:mt-1.5 font-black h-4 md:h-5 transition-all duration-300 ${
+        (isSelected && !isHintMode) ? 'text-blue-900 scale-140 font-black' : 
+        (isSameNumAsSelected ? 'text-blue-600 font-extrabold scale-120' : 'text-slate-500')
       } ${isCompleted || isLocked ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
         {num}
       </span>

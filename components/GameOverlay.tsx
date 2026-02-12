@@ -6,6 +6,7 @@ interface GameOverlayProps {
   message: string;
   type: 'won' | 'lost';
   onAction: () => void;
+  onRetry?: () => void;
   onReveal: () => void;
   quote?: string;
   author?: string;
@@ -55,6 +56,7 @@ const GameOverlay: React.FC<GameOverlayProps> = ({
   message, 
   type, 
   onAction, 
+  onRetry,
   onReveal, 
   quote,
   author,
@@ -111,6 +113,16 @@ const GameOverlay: React.FC<GameOverlayProps> = ({
         )}
 
         <div className="w-full space-y-3 md:space-y-4">
+          {type === 'lost' && onRetry && (
+            <button
+              onClick={onRetry}
+              className="w-full py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-200 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+            >
+              <i className="fa-solid fa-rotate-right"></i>
+              <span>נסה שוב (אותו שלב)</span>
+            </button>
+          )}
+
           <button
             onClick={onAction}
             className={`w-full py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 ${

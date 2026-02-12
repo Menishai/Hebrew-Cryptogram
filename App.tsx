@@ -42,23 +42,34 @@ const checkIfCellIsLocked = (
   levelData: GameLevel | null,
   currentLevel: number,
   status: GameStatus,
-  guesses: Record<number, string>
+  guesses: Record<number, string>,
+  hintRevealedIndices: number[] = []
 ): boolean => {
   if (!levelData?.isLockChallenge || status !== GameStatus.PLAYING) return false;
   if (currentLevel < 3) return false; 
 
   const isLetter = (i: number) => i >= 0 && i < levelData.quote.length && isHebrewLetter(levelData.quote[i]);
-  const isSolved = (i: number) => {
+  
+  // Solved normally = keyboard or pre-filled (NOT hint)
+  const isSolvedNormally = (i: number) => {
     if (!isLetter(i)) return false;
-    if (levelData.revealedIndices.includes(i)) return true;
-    const guess = guesses[i];
-    return !!(guess && normalizeHebrewChar(guess) === normalizeHebrewChar(levelData.quote[i]));
+    const isCorrect = !!(guesses[i] && normalizeHebrewChar(guesses[i]) === normalizeHebrewChar(levelData.quote[i]));
+    return isCorrect && !hintRevealedIndices.includes(i);
+  };
+
+  // Solved any way = hint, keyboard, or pre-filled
+  const isSolvedAtAll = (i: number) => {
+    if (!isLetter(i)) return false;
+    return !!(guesses[i] && normalizeHebrewChar(guesses[i]) === normalizeHebrewChar(levelData.quote[i]));
   };
   
-  if (isSolved(idx)) return false;
+  if (isSolvedAtAll(idx)) return false;
+  
+  // Rule: First letter of word is never locked
   const isFirstLetterOfWord = idx === 0 || levelData.quote[idx - 1] === ' ';
   if (isFirstLetterOfWord) return false;
 
+  // Spacing logic
   let lockSpacing = 2;
   if (currentLevel >= 3 && currentLevel < 5) lockSpacing = 5;
   else if (currentLevel >= 5 && currentLevel < 10) lockSpacing = 3;
@@ -76,10 +87,23 @@ const checkIfCellIsLocked = (
   
   const prevL = findAdjacentLetter(idx, -1);
   const nextL = findAdjacentLetter(idx, 1);
-  
-  if (prevL !== -1 && isSolved(prevL)) return false;
-  if (nextL !== -1 && isSolved(nextL)) return false;
-  
+  const neighbors = [prevL, nextL].filter(n => n !== -1);
+
+  // If no neighbors, should not be locked
+  if (neighbors.length === 0) return false;
+
+  // RULE 1: If ANY neighbor is solved NORMALLY (keyboard), unlock. (Standard Unlock)
+  if (neighbors.some(n => isSolvedNormally(n))) return false;
+
+  // RULE 2: If the cell has ONLY ONE neighbor (edge case) and it is solved (any way), unlock.
+  // This satisfies the request for "last letter" or "first letter" locking scenarios.
+  if (neighbors.length === 1 && isSolvedAtAll(neighbors[0])) return false;
+
+  // RULE 3: If ALL neighbors are solved (even via hints), unlock.
+  // This prevents the "Dead End" where a locked cell is surrounded by hint-revealed letters.
+  if (neighbors.every(n => isSolvedAtAll(n))) return false;
+
+  // Otherwise, stay locked to prevent double-benefit from hints.
   return true;
 };
 
@@ -148,19 +172,20 @@ const App: React.FC = () => {
       mediumWinsCount: 0,
       hardWinsCount: 0,
       veryHardWinsCount: 0,
-      claimedAchievements: []
+      claimedAchievements: [],
+      totalMistakes: 0
     };
     if (!saved) return initialStats;
     try {
       const parsed = JSON.parse(saved);
-      // Basic migration / validation to ensure we never lose data when updating types
       return { 
         ...initialStats, 
         ...parsed,
         hintsRemaining: parsed.hintsRemaining !== undefined ? parsed.hintsRemaining : initialStats.hintsRemaining,
         currentLevel: parsed.currentLevel || 1,
         usedQuotes: Array.isArray(parsed.usedQuotes) ? parsed.usedQuotes : [],
-        claimedAchievements: Array.isArray(parsed.claimedAchievements) ? parsed.claimedAchievements : []
+        claimedAchievements: Array.isArray(parsed.claimedAchievements) ? parsed.claimedAchievements : [],
+        totalMistakes: parsed.totalMistakes || 0
       };
     } catch {
       return initialStats;
@@ -176,10 +201,10 @@ const App: React.FC = () => {
     selectedCellIndex: null,
     cellFeedback: {},
     currentLevel: stats.currentLevel || 1,
-    isAuthorRevealed: false
+    isAuthorRevealed: false,
+    hintRevealedIndices: []
   });
 
-  // Persistent storage helpers for Atomic updates
   const persistStats = (newStats: Statistics) => {
     localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(newStats));
   };
@@ -194,17 +219,14 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SOUND, String(soundEnabled)); }, [soundEnabled]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.LAST_SCREEN, currentScreen); }, [currentScreen]);
   
-  // Stats secondary backup
   useEffect(() => { persistStats(stats); }, [stats]);
 
-  // Main game state persistence hook
   useEffect(() => {
     if (currentScreen === Screen.PLAYING && levelData && status === GameStatus.PLAYING) {
       persistGameState({ levelData, userState, difficulty: currentLevelDifficulty, history });
     }
   }, [currentScreen, levelData, userState, currentLevelDifficulty, status, history]);
 
-  // Auto-resume logic on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
     const lastScreen = localStorage.getItem(STORAGE_KEYS.LAST_SCREEN);
@@ -213,7 +235,11 @@ const App: React.FC = () => {
         const parsed = JSON.parse(saved);
         if (parsed.levelData && parsed.userState) {
           setLevelData(parsed.levelData);
-          setUserState(parsed.userState);
+          // Sync hints from stats upon loading
+          setUserState({
+            ...parsed.userState,
+            hintsRemaining: stats.hintsRemaining
+          });
           setCurrentLevelDifficulty(parsed.difficulty);
           setHistory(parsed.history || []);
           setCurrentScreen(Screen.PLAYING);
@@ -272,6 +298,7 @@ const App: React.FC = () => {
     setStats(prev => {
       const newStats = { ...prev };
       newStats.gamesPlayed += 1;
+      newStats.totalMistakes += mistakesCount;
       
       if (won) {
         const quoteObj = { text: levelInfo.quote, author: levelInfo.author, year: levelInfo.year };
@@ -330,6 +357,7 @@ const App: React.FC = () => {
         claimedAchievements: [...prev.claimedAchievements, id]
       };
       
+      // Update active userState hint count as well
       setUserState(currentU => ({ ...currentU, hintsRemaining: newHints }));
       persistStats(updatedStats);
       
@@ -341,12 +369,12 @@ const App: React.FC = () => {
   const hasLockedCells = useMemo(() => {
     if (!levelData) return false;
     for (let i = 0; i < levelData.quote.length; i++) {
-      if (isHebrewLetter(levelData.quote[i]) && checkIfCellIsLocked(i, levelData, stats.currentLevel, status, userState.cellGuesses)) {
+      if (isHebrewLetter(levelData.quote[i]) && checkIfCellIsLocked(i, levelData, stats.currentLevel, status, userState.cellGuesses, userState.hintRevealedIndices)) {
         return true;
       }
     }
     return false;
-  }, [levelData, stats.currentLevel, status, userState.cellGuesses]);
+  }, [levelData, stats.currentLevel, status, userState.cellGuesses, userState.hintRevealedIndices]);
 
   const handleUndoRequest = useCallback(() => {
     if (history.length === 0 || status !== GameStatus.PLAYING) return;
@@ -385,7 +413,7 @@ const App: React.FC = () => {
     
     const lockedIndices: number[] = [];
     for (let i = 0; i < levelData.quote.length; i++) {
-      if (isHebrewLetter(levelData.quote[i]) && checkIfCellIsLocked(i, levelData, stats.currentLevel, status, userState.cellGuesses)) {
+      if (isHebrewLetter(levelData.quote[i]) && checkIfCellIsLocked(i, levelData, stats.currentLevel, status, userState.cellGuesses, userState.hintRevealedIndices)) {
         lockedIndices.push(i);
       }
     }
@@ -393,8 +421,8 @@ const App: React.FC = () => {
     if (lockedIndices.length === 0) return;
     
     const randomIdx = lockedIndices[Math.floor(Math.random() * lockedIndices.length)];
-    applyHintToIndex(randomIdx);
-  }, [levelData, status, userState.hintsRemaining, stats.currentLevel, userState.cellGuesses]);
+    applyHintToIndex(randomIdx, true); 
+  }, [levelData, status, userState.hintsRemaining, stats.currentLevel, userState.cellGuesses, userState.hintRevealedIndices]);
 
   const getRandomDifficulty = useCallback((level: number) => {
     if (level <= 4) {
@@ -434,8 +462,8 @@ const App: React.FC = () => {
   };
 
   const isCellLocked = useCallback((idx: number) => {
-    return checkIfCellIsLocked(idx, levelData, stats.currentLevel, status, userState.cellGuesses);
-  }, [levelData, userState.cellGuesses, status, stats.currentLevel]);
+    return checkIfCellIsLocked(idx, levelData, stats.currentLevel, status, userState.cellGuesses, userState.hintRevealedIndices);
+  }, [levelData, userState.cellGuesses, status, stats.currentLevel, userState.hintRevealedIndices]);
 
   const initLevelState = useCallback((newLevel: GameLevel, diff: Difficulty) => {
     const config = DIFFICULTY_CONFIG[diff];
@@ -457,7 +485,7 @@ const App: React.FC = () => {
     for (let i = 0; i < newLevel.quote.length; i++) {
       const isLetter = isHebrewLetter(newLevel.quote[i]);
       const isRevealed = newLevel.revealedIndices.includes(i);
-      if (isLetter && !isRevealed && !checkIfCellIsLocked(i, newLevel, stats.currentLevel, GameStatus.PLAYING, initialGuesses)) {
+      if (isLetter && !isRevealed && !checkIfCellIsLocked(i, newLevel, stats.currentLevel, GameStatus.PLAYING, initialGuesses, [])) {
         firstEmptyIdx = i; break;
       }
     }
@@ -471,7 +499,8 @@ const App: React.FC = () => {
       selectedCellIndex: firstEmptyIdx === -1 ? null : firstEmptyIdx,
       cellFeedback: {},
       currentLevel: stats.currentLevel || 1,
-      isAuthorRevealed: false
+      isAuthorRevealed: false,
+      hintRevealedIndices: []
     };
 
     setUserState(initialUserState);
@@ -505,6 +534,13 @@ const App: React.FC = () => {
     }
   }, [difficultySetting, stats.currentLevel, stats.usedQuotes, preFetchedLevel, initLevelState, getRandomDifficulty]);
 
+  const handleRetryLevel = useCallback(() => {
+    if (!levelData) return;
+    setCelebratingWordIdx(null);
+    setIsOverlayVisible(true);
+    initLevelState(levelData, currentLevelDifficulty);
+  }, [levelData, currentLevelDifficulty, initLevelState]);
+
   const handleHintClick = useCallback(() => {
     if (status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
     if (isHintMode) {
@@ -537,13 +573,30 @@ const App: React.FC = () => {
     }));
   }, [userState.isAuthorRevealed, userState.hintsRemaining, playSound]);
 
-  const applyHintToIndex = useCallback((idx: number) => {
+  const applyHintToIndex = useCallback((idx: number, isFromLockedMenu = false) => {
     if (!levelData || status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
+    
     const charAtSelection = levelData.quote[idx];
-    if (!isHebrewLetter(charAtSelection)) { setIsBoardShaking(true); setTimeout(() => setIsBoardShaking(false), 500); return; }
+    if (!isHebrewLetter(charAtSelection)) { 
+      setIsBoardShaking(true); 
+      setTimeout(() => setIsBoardShaking(false), 500); 
+      return; 
+    }
+
+    // New logic: Use isCellLocked but pass isFromLockedMenu=true if coming from specific lock-reveal hint.
+    if (!isFromLockedMenu && isCellLocked(idx)) {
+      playSound('locked');
+      setIsBoardShaking(true);
+      setTimeout(() => setIsBoardShaking(false), 400);
+      setIsHintMode(false); 
+      return;
+    }
     
     const currentGuess = userState.cellGuesses[idx];
-    if (currentGuess && normalizeHebrewChar(currentGuess) === normalizeHebrewChar(charAtSelection)) { setIsHintMode(false); return; }
+    if (currentGuess && normalizeHebrewChar(currentGuess) === normalizeHebrewChar(charAtSelection)) { 
+      setIsHintMode(false); 
+      return; 
+    }
     
     playSound('hint');
     if (vibrationEnabled && navigator.vibrate) navigator.vibrate(50);
@@ -559,6 +612,8 @@ const App: React.FC = () => {
       const newGuesses = { ...prev.cellGuesses, [idx]: levelData.quote[idx] };
       const newFeedback = { ...prev.cellFeedback, [idx]: 'pop-active' as const };
       
+      const newHintRevealed = [...prev.hintRevealedIndices, idx];
+      
       const isWin = levelData.quote.split('').every((char, i) => {
         const isLetter = isHebrewLetter(char);
         if (!isLetter) return true;
@@ -573,7 +628,7 @@ const App: React.FC = () => {
           playSound('win');
         }, 600);
       }
-      return { ...prev, hintsRemaining: newHints, cellGuesses: newGuesses, cellFeedback: newFeedback };
+      return { ...prev, hintsRemaining: newHints, cellGuesses: newGuesses, cellFeedback: newFeedback, hintRevealedIndices: newHintRevealed };
     });
     
     setIsHintMode(false);
@@ -584,7 +639,7 @@ const App: React.FC = () => {
         return { ...prev, cellFeedback: updatedFeedback };
       });
     }, 1000);
-  }, [levelData, status, userState.hintsRemaining, userState.cellGuesses, playSound, updateStats, vibrationEnabled, currentLevelDifficulty]);
+  }, [levelData, status, userState.hintsRemaining, userState.cellGuesses, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
@@ -600,8 +655,13 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const { levelData: savedLevel, userState: savedUserState, difficulty: savedDiff, history: savedHistory } = JSON.parse(saved);
+        // Ensure the hint count is synced from the current stats
+        const syncedUserState = {
+          ...savedUserState,
+          hintsRemaining: stats.hintsRemaining
+        };
         setLevelData(savedLevel);
-        setUserState(savedUserState);
+        setUserState(syncedUserState);
         setCurrentLevelDifficulty(savedDiff);
         setHistory(savedHistory || []);
         setCurrentScreen(Screen.PLAYING);
@@ -613,7 +673,7 @@ const App: React.FC = () => {
         setRewardMessage(null);
       } catch (e) { localStorage.removeItem(STORAGE_KEYS.GAME_STATE); }
     }
-  }, []);
+  }, [stats.hintsRemaining]);
 
   const revealSolution = useCallback(() => {
     if (!levelData) return;
@@ -729,14 +789,14 @@ const App: React.FC = () => {
 
         let nextIdx: number | null = null;
         for (let i = idx + 1; i < levelData.quote.length; i++) {
-          const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses);
+          const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses, prev.hintRevealedIndices);
           if (isHebrewLetter(levelData.quote[i]) && !newGuesses[i] && !locked) { 
             nextIdx = i; break; 
           }
         }
         if (nextIdx === null) {
           for (let i = 0; i < idx; i++) {
-            const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses);
+            const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses, prev.hintRevealedIndices);
             if (isHebrewLetter(levelData.quote[i]) && !newGuesses[i] && !locked) { 
               nextIdx = i; break; 
             }
@@ -759,7 +819,7 @@ const App: React.FC = () => {
       setUserState(prev => {
         const newMistakes = prev.mistakes + 1;
         const newFeedback = { ...prev.cellFeedback, [idx]: 'wrong' as const };
-        if (newMistakes >= prev.maxMistakes) { setStatus(GameStatus.LOST); updateStats(false, levelData, currentLevelDifficulty); }
+        if (newMistakes >= prev.maxMistakes) { setStatus(GameStatus.LOST); updateStats(false, levelData, currentLevelDifficulty, newMistakes); }
         return { ...prev, mistakes: newMistakes, cellFeedback: newFeedback, cellGuesses: { ...prev.cellGuesses, [idx]: letter } };
       });
       setTimeout(() => {
@@ -836,7 +896,8 @@ const App: React.FC = () => {
           <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => startNewGame()} onHome={() => setCurrentScreen(Screen.HOME)} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} />
           <main 
             ref={mainScrollRef}
-            className={`flex-1 overflow-y-auto px-2 py-4 md:px-6 md:py-8 max-w-4xl mx-auto w-full flex flex-col items-center ${isBoardShaking ? 'animate-shake' : ''}`}
+            style={{ fontSize: '16.5px' }}
+            className="flex-1 overflow-y-auto px-2 py-4 md:px-6 md:py-8 max-w-4xl mx-auto w-full flex flex-col items-center"
           >
             {status === GameStatus.LOADING ? (
               <div className="flex flex-col items-center justify-center h-full">
@@ -851,31 +912,30 @@ const App: React.FC = () => {
                 <div className="bg-green-100 text-green-800 px-6 py-2 rounded-full font-bold text-sm">הפתרון נחשף בלוח!</div>
                 <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-3">
                   <i className="fa-solid fa-arrow-left"></i>
-                  <span>{status === GameStatus.WON ? 'לשלב הבא' : 'נסה שוב'}</span>
+                  <span>{status === GameStatus.WON ? 'לשלב הבא' : 'נסה שלב חדש'}</span>
                 </button>
               </div>
             )}
-            
+          </main>
+          <div className="pb-1 md:pb-2 px-2 flex-shrink-0 flex flex-col items-center gap-1 md:gap-2">
+            <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
             {status === GameStatus.PLAYING && (
-              <div className="mt-auto pt-12 pb-4 opacity-40 hover:opacity-100 transition-opacity">
-                 <a 
-                    href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות כתיב באלוף הצופן" 
-                    className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 border border-slate-200 border-dashed px-3 py-1 rounded-full transition-colors hover:bg-slate-100"
-                 >
-                    <i className="fa-solid fa-pen-nib"></i>
-                    מצאת טעות כתיב?
-                 </a>
+              <div className="opacity-30 hover:opacity-100 transition-opacity">
+                <a 
+                  href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות כתיב באלוף הצופן" 
+                  className="text-[9px] font-bold text-slate-400 flex items-center gap-1 border border-slate-200 border-dashed px-2 py-0.5 rounded-full transition-colors hover:bg-slate-50"
+                >
+                  <i className="fa-solid fa-pen-nib"></i>
+                  דווח על טעות
+                </a>
               </div>
             )}
-          </main>
-          <div className="pb-8 px-2 flex-shrink-0">
-            <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
           </div>
           {status === GameStatus.WON && isOverlayVisible && (
             <GameOverlay title="כל הכבוד!" message={`סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={() => startNewGame()} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} />
           )}
           {status === GameStatus.LOST && isOverlayVisible && (
-            <GameOverlay title="המשחק נגמר" message="עשית יותר מדי טעויות. נסה שוב!" type="lost" onAction={() => startNewGame()} onReveal={revealSolution} author={levelData?.author} showRevealButton={true} />
+            <GameOverlay title="המשחק נגמר" message="עשית יותר מדי טעויות. נסה שוב!" type="lost" onAction={() => startNewGame()} onRetry={handleRetryLevel} onReveal={revealSolution} author={levelData?.author} showRevealButton={true} />
           )}
         </div>
       )}

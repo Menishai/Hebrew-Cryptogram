@@ -31,13 +31,15 @@ export interface Statistics {
   hasCompletedTutorial: boolean; 
   perfectGames: number; 
   hintsRemaining: number; 
-  // Reward counters - now tracking totals
+  // Reward counters
   easyWinsCount: number;   
   mediumWinsCount: number; 
   hardWinsCount: number;   
   veryHardWinsCount: number;
   // Achievement tracking
-  claimedAchievements: string[]; // List of IDs for achievements whose hint has been claimed
+  claimedAchievements: string[];
+  // Advanced tracking
+  totalMistakes: number;
 }
 
 export interface GameLevel {
@@ -59,6 +61,7 @@ export interface UserState {
   cellFeedback: Record<number, 'correct' | 'wrong' | 'pop-active' | null>;
   currentLevel: number;
   isAuthorRevealed: boolean;
+  hintRevealedIndices: number[]; // Tracks which letters were solved via hints
 }
 
 export enum GameStatus {
