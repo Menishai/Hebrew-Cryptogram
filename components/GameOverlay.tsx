@@ -5,7 +5,7 @@ interface GameOverlayProps {
   title: string;
   message: string;
   type: 'won' | 'lost';
-  onAction: () => void;
+  onAction: () => void | Promise<void>;
   onRetry?: () => void;
   onReveal: () => void;
   quote?: string;
@@ -13,6 +13,7 @@ interface GameOverlayProps {
   year?: string;
   showRevealButton?: boolean;
   bonusMessage?: string | null;
+  onReportMistake?: () => void;
 }
 
 const Confetti: React.FC = () => {
@@ -62,7 +63,8 @@ const GameOverlay: React.FC<GameOverlayProps> = ({
   author,
   year,
   showRevealButton = false,
-  bonusMessage
+  bonusMessage,
+  onReportMistake
 }) => {
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-sm bg-slate-900/40" dir="rtl">
@@ -125,7 +127,7 @@ const GameOverlay: React.FC<GameOverlayProps> = ({
 
           <button
             onClick={onAction}
-            className={`w-full py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 ${
+            className={`w-full py-4 md:py-5 rounded-2xl font-black text-lg md:text-xl text-white shadow-xl transition-all hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-3 ${
               type === 'won' ? 'bg-green-500 hover:bg-green-600 shadow-green-200' : 'bg-blue-500 hover:bg-blue-600 shadow-blue-200'
             }`}
           >
@@ -140,6 +142,16 @@ const GameOverlay: React.FC<GameOverlayProps> = ({
             >
               <i className="fa-solid fa-eye"></i>
               חשוף פתרון
+            </button>
+          )}
+
+          {onReportMistake && (
+            <button
+              onClick={onReportMistake}
+              className="w-full py-3 md:py-4 rounded-2xl font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base border border-rose-100 mt-2"
+            >
+              <i className="fa-solid fa-flag"></i>
+              דווח על טעות בציטוט
             </button>
           )}
         </div>

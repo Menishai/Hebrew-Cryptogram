@@ -1,6 +1,7 @@
 
-import React from 'react';
-import { Difficulty, FontSize } from '../types';
+import React, { useState } from 'react';
+import { Difficulty, FontSize, Statistics } from '../types';
+import { encodeSaveData, decodeSaveData } from '../utils/saveUtils';
 
 interface SettingsScreenProps {
   difficulty: Difficulty | 'AUTO';
@@ -12,6 +13,9 @@ interface SettingsScreenProps {
   soundEnabled: boolean;
   onSoundToggle: () => void;
   onBack: () => void;
+  stats: Statistics;
+  onImportData: (data: any) => void;
+  onReportMistake?: () => void;
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ 
@@ -23,63 +27,107 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onVibrationToggle,
   soundEnabled,
   onSoundToggle,
-  onBack 
+  onBack,
+  stats,
+  onImportData,
+  onReportMistake
 }) => {
+  const [importMode, setImportMode] = useState(false);
+  const [exportMode, setExportMode] = useState(false);
+  const [exportedCode, setExportedCode] = useState('');
+  const [importValue, setImportValue] = useState('');
+  const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
   const difficultyOptions = [
-    { id: 'AUTO', label: 'אוטומטי', desc: 'רמת קושי משתנה לפי השלב', icon: 'fa-wand-magic-sparkles', color: 'text-indigo-600' },
-    { id: Difficulty.EASY, label: 'קל', desc: 'יותר אותיות גלויות, יותר נסיונות', icon: 'fa-seedling', color: 'text-green-600' },
-    { id: Difficulty.MEDIUM, label: 'בינוני', desc: 'איזון מושלם לאתגר מהנה', icon: 'fa-user-astronaut', color: 'text-blue-600' },
-    { id: Difficulty.HARD, label: 'קשה', desc: 'פחות אותיות גלויות, מעט טעויות', icon: 'fa-fire', color: 'text-orange-600' },
-    { id: Difficulty.VERY_HARD, label: 'קשה מאוד', desc: 'ללא אותיות גלויות, רק 2 טעויות', icon: 'fa-bolt', color: 'text-rose-600' },
+    { id: 'AUTO', label: 'אוטומטי', desc: 'קושי משתנה לפי השלב', icon: 'fa-wand-magic-sparkles', color: 'text-indigo-600' },
+    { id: Difficulty.EASY, label: 'קל', desc: 'יותר אותיות גלויות', icon: 'fa-seedling', color: 'text-green-600' },
+    { id: Difficulty.MEDIUM, label: 'בינוני', desc: 'איזון מושלם לאתגר', icon: 'fa-user-astronaut', color: 'text-blue-600' },
+    { id: Difficulty.HARD, label: 'קשה', desc: 'פחות אותיות גלויות', icon: 'fa-fire', color: 'text-orange-600' },
+    { id: Difficulty.VERY_HARD, label: 'קשה מאוד', desc: 'מינימום עזרה ופסילות', icon: 'fa-bolt', color: 'text-rose-600' },
   ];
 
   const fontSizeOptions = [
-    { id: FontSize.SMALL, label: 'קטן', previewSize: 'text-lg md:text-xl' },
-    { id: FontSize.MEDIUM, label: 'בינוני', previewSize: 'text-2xl md:text-3xl' },
-    { id: FontSize.LARGE, label: 'גדול', previewSize: 'text-4xl md:text-5xl' },
+    { id: FontSize.SMALL, label: 'קטן', previewSize: 'text-lg' },
+    { id: FontSize.MEDIUM, label: 'בינוני', previewSize: 'text-2xl' },
+    { id: FontSize.LARGE, label: 'גדול', previewSize: 'text-4xl' },
   ];
 
-  const handleVibrationClick = () => {
-    onVibrationToggle();
-    if (!vibrationEnabled && navigator.vibrate) {
-      navigator.vibrate(50);
+  const handleExport = () => {
+    const saveData = {
+      stats,
+      difficulty,
+      fontSize,
+      vibrationEnabled,
+      soundEnabled,
+      timestamp: Date.now()
+    };
+    const code = encodeSaveData(saveData);
+    setExportedCode(code);
+    setExportMode(true);
+    setImportMode(false);
+    
+    navigator.clipboard.writeText(code).then(() => {
+      setStatusMessage({ text: 'קוד השמירה הועתק ללוח!', type: 'success' });
+      setTimeout(() => setStatusMessage(null), 3000);
+    });
+  };
+
+  const handleImport = () => {
+    if (!importValue.trim()) return;
+    const data = decodeSaveData(importValue.trim());
+    if (data && data.stats) {
+      onImportData(data);
+      setStatusMessage({ text: 'הנתונים שוחזרו בהצלחה!', type: 'success' });
+      setImportMode(false);
+      setImportValue('');
+    } else {
+      setStatusMessage({ text: 'קוד לא תקין, נסה שוב', type: 'error' });
     }
+    setTimeout(() => setStatusMessage(null), 3000);
   };
 
   return (
     <div className="flex flex-col items-center h-full p-4 md:p-6 bg-slate-50 overflow-y-auto" dir="rtl">
-      <div className="w-full flex items-center justify-between mb-6 md:mb-8 flex-shrink-0">
-        <button onClick={onBack} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-sm transition-transform active:scale-95">
+      {/* Header */}
+      <div className="w-full flex items-center justify-between mb-6 flex-shrink-0">
+        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-sm transition-transform active:scale-95">
           <i className="fa-solid fa-arrow-right"></i>
         </button>
-        <h2 className="text-xl md:text-2xl font-black text-slate-800">הגדרות</h2>
-        <div className="w-10 md:w-12"></div>
+        <h2 className="text-xl font-black text-slate-800">הגדרות</h2>
+        <div className="w-10"></div>
       </div>
 
-      <div className="w-full max-w-md space-y-6 md:space-y-8 pb-12">
+      <div className="w-full max-w-md space-y-6 pb-12">
+        {/* Status Toast */}
+        {statusMessage && (
+          <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-[150] font-black text-white animate-in slide-in-from-bottom duration-300 ${statusMessage.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+            {statusMessage.text}
+          </div>
+        )}
+
         {/* Difficulty Section */}
         <section>
-          <h3 className="text-slate-500 text-sm font-bold uppercase tracking-widest px-2 mb-3 text-right">רמת קושי</h3>
-          <div className="space-y-3">
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">רמת קושי</h3>
+          <div className="space-y-2">
             {difficultyOptions.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => onDifficultyChange(opt.id as any)}
-                className={`w-full p-4 md:p-5 rounded-3xl flex items-center gap-4 md:gap-5 transition-all border-2 text-right ${
+                className={`w-full p-4 rounded-3xl flex items-center gap-4 transition-all border-2 text-right ${
                   difficulty === opt.id 
-                    ? 'bg-white border-blue-600 shadow-md scale-[1.02]' 
+                    ? 'bg-white border-blue-600 shadow-md scale-[1.01]' 
                     : 'bg-white border-slate-200 shadow-sm grayscale opacity-70'
                 }`}
               >
-                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-lg md:text-xl bg-slate-50 ${opt.color}`}>
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg bg-slate-50 ${opt.color}`}>
                   <i className={`fa-solid ${opt.icon}`}></i>
                 </div>
                 <div className="flex-1">
-                  <div className="text-base md:text-lg font-black text-slate-800 leading-tight">{opt.label}</div>
-                  <div className="text-sm text-slate-500 font-medium">{opt.desc}</div>
+                  <div className="text-base font-black text-slate-800 leading-tight">{opt.label}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">{opt.desc}</div>
                 </div>
                 {difficulty === opt.id && (
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] shadow-sm">
+                  <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px]">
                     <i className="fa-solid fa-check"></i>
                   </div>
                 )}
@@ -90,22 +138,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
         {/* Font Size Section */}
         <section>
-          <h3 className="text-slate-500 text-sm font-bold uppercase tracking-widest px-2 mb-3 text-right">גודל טקסט</h3>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">גודל טקסט</h3>
           <div className="grid grid-cols-3 gap-3">
             {fontSizeOptions.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => onFontSizeChange(opt.id)}
-                className={`p-3 md:p-4 h-24 md:h-28 rounded-3xl flex flex-col items-center justify-between transition-all border-2 ${
+                className={`p-3 h-20 rounded-2xl flex flex-col items-center justify-center transition-all border-2 ${
                   fontSize === opt.id 
-                    ? 'bg-white border-blue-600 shadow-md' 
-                    : 'bg-white border-slate-200 shadow-sm opacity-70'
+                    ? 'bg-white border-blue-600 shadow-md text-blue-600' 
+                    : 'bg-white border-slate-200 text-slate-400'
                 }`}
               >
-                <div className={`font-black text-blue-600 h-10 md:h-12 flex items-center ${opt.previewSize}`}>
-                  א
-                </div>
-                <div className="font-bold text-slate-800 text-sm md:text-base">{opt.label}</div>
+                <div className={`font-black mb-1 ${opt.previewSize}`}>א</div>
+                <div className="font-bold text-xs">{opt.label}</div>
               </button>
             ))}
           </div>
@@ -113,64 +159,97 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
         {/* Preferences Section */}
         <section>
-          <h3 className="text-slate-500 text-sm font-bold uppercase tracking-widest px-2 mb-3 text-right">העדפות</h3>
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100">
-            <div className="flex items-center justify-between p-4 md:p-5">
-              <div className="flex items-center gap-4">
-                <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-base md:text-lg border ${vibrationEnabled ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                  <i className="fa-solid fa-mobile-vibration"></i>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-slate-800 text-sm md:text-base">רטט</div>
-                  <div className="text-[12px] md:text-[13px] text-slate-500">רטט בטעויות</div>
-                </div>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">העדפות</h3>
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 divide-y divide-slate-100">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3 text-right">
+                <i className={`fa-solid fa-mobile-vibration text-lg ${vibrationEnabled ? 'text-orange-500' : 'text-slate-300'}`}></i>
+                <span className="font-bold text-slate-800 text-sm">רטט בטעויות</span>
               </div>
-              <button 
-                onClick={handleVibrationClick}
-                className={`w-10 h-6 md:w-12 md:h-7 rounded-full transition-colors relative ${vibrationEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow-sm transition-all ${vibrationEnabled ? 'left-5 md:left-6' : 'left-1'}`} />
+              <button onClick={onVibrationToggle} className={`w-11 h-6 rounded-full relative transition-colors ${vibrationEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${vibrationEnabled ? 'left-6' : 'left-1'}`} />
               </button>
             </div>
-
-            <div className="flex items-center justify-between p-4 md:p-5">
-              <div className="flex items-center gap-4">
-                <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-base md:text-lg border ${soundEnabled ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                  <i className={`fa-solid ${soundEnabled ? 'fa-volume-high' : 'fa-volume-xmark'}`}></i>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-slate-800 text-sm md:text-base">סאונד</div>
-                  <div className="text-[12px] md:text-[13px] text-slate-500">צלילים במהלך המשחק</div>
-                </div>
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3 text-right">
+                <i className={`fa-solid ${soundEnabled ? 'fa-volume-high text-purple-500' : 'fa-volume-xmark text-slate-300'} text-lg`}></i>
+                <span className="font-bold text-slate-800 text-sm">צלילים</span>
               </div>
-              <button 
-                onClick={onSoundToggle}
-                className={`w-10 h-6 md:w-12 md:h-7 rounded-full transition-colors relative ${soundEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow-sm transition-all ${soundEnabled ? 'left-5 md:left-6' : 'left-1'}`} />
+              <button onClick={onSoundToggle} className={`w-11 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${soundEnabled ? 'left-6' : 'left-1'}`} />
               </button>
             </div>
           </div>
         </section>
 
-        <div className="flex flex-col gap-4">
-          <div className="p-4 md:p-6 bg-white border border-slate-200 rounded-3xl shadow-sm text-center">
-            <p className="text-slate-600 text-sm md:text-base font-medium italic leading-relaxed">
-              הגדרות אלו יישמרו במכשיר שלך. שינוי רמת קושי במהלך משחק יחליף את הפאזל הנוכחי.
-            </p>
-          </div>
-          
-          <a 
-            href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות כתיב באלוף הצופן" 
-            className="flex items-center justify-center gap-2 py-3.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all text-sm font-bold border-2 border-dashed border-slate-300 rounded-2xl active:scale-95 shadow-sm"
-          >
-            <i className="fa-solid fa-pen-nib"></i>
-            מצאת טעות כתיב? דווח לנו
-          </a>
+        {/* Save Transfer Section */}
+        <section>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">סנכרון ומעבר מכשיר</h3>
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleExport}
+                className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-black border transition-all ${exportMode ? 'bg-blue-600 text-white border-blue-700' : 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100'}`}
+              >
+                <i className="fa-solid fa-copy"></i>
+                <span className="text-xs">ייצוא שמירה</span>
+              </button>
+              <button
+                onClick={() => { setImportMode(!importMode); setExportMode(false); }}
+                className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-black border transition-all ${importMode ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+              >
+                <i className="fa-solid fa-paste"></i>
+                <span className="text-xs">ייבוא שמירה</span>
+              </button>
+            </div>
 
-          <div className="text-center pt-2">
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Designed for Cryptogram Master Elite</p>
+            {exportMode && exportedCode && (
+              <div className="animate-in fade-in slide-in-from-top duration-300 space-y-3 pt-2">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <p className="text-[10px] text-slate-400 font-bold mb-2 uppercase">קוד השמירה שלך (הועתק ללוח):</p>
+                  <div className="w-full max-h-24 overflow-y-auto bg-white p-3 rounded-lg border border-slate-100 text-[10px] font-mono break-all text-slate-900 select-all">
+                    {exportedCode}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {importMode && (
+              <div className="animate-in fade-in slide-in-from-top duration-300 space-y-3 pt-2">
+                <textarea
+                  value={importValue}
+                  onChange={(e) => setImportValue(e.target.value)}
+                  placeholder="הדבק כאן את קוד השמירה..."
+                  className="w-full h-24 p-3 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-slate-900 placeholder:text-slate-300"
+                />
+                <div className="flex gap-2">
+                  <button onClick={handleImport} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100">שחזר</button>
+                  <button onClick={() => setImportValue('')} className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl font-black">נקה</button>
+                </div>
+              </div>
+            )}
           </div>
+        </section>
+
+        {/* Support Section */}
+        <section>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">תמיכה ומשוב</h3>
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+            <button 
+              onClick={onReportMistake}
+              className="w-full py-4 rounded-2xl flex items-center justify-between px-4 bg-rose-50 border-2 border-rose-100 text-rose-600 transition-all hover:bg-rose-100 active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <i className="fa-solid fa-flag"></i>
+                <span className="font-black text-sm">מצאת טעות? דווח לנו</span>
+              </div>
+              <i className="fa-solid fa-chevron-left text-xs opacity-50"></i>
+            </button>
+          </div>
+        </section>
+
+        <div className="text-center pt-4">
+           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Designed for Cryptogram Master Elite</p>
         </div>
       </div>
     </div>

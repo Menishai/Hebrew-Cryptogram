@@ -51,14 +51,12 @@ const checkIfCellIsLocked = (
 
   const isLetter = (i: number) => i >= 0 && i < levelData.quote.length && isHebrewLetter(levelData.quote[i]);
   
-  // Solved normally = keyboard or pre-filled (NOT hint)
   const isSolvedNormally = (i: number) => {
     if (!isLetter(i)) return false;
     const isCorrect = !!(guesses[i] && normalizeHebrewChar(guesses[i]) === normalizeHebrewChar(levelData.quote[i]));
     return isCorrect && !hintRevealedIndices.includes(i);
   };
 
-  // Solved any way = hint, keyboard, or pre-filled
   const isSolvedAtAll = (i: number) => {
     if (!isLetter(i)) return false;
     return !!(guesses[i] && normalizeHebrewChar(guesses[i]) === normalizeHebrewChar(levelData.quote[i]));
@@ -66,11 +64,9 @@ const checkIfCellIsLocked = (
   
   if (isSolvedAtAll(idx)) return false;
   
-  // Rule: First letter of word is never locked
   const isFirstLetterOfWord = idx === 0 || levelData.quote[idx - 1] === ' ';
   if (isFirstLetterOfWord) return false;
 
-  // Spacing logic
   let lockSpacing = 2;
   if (currentLevel >= 3 && currentLevel < 5) lockSpacing = 5;
   else if (currentLevel >= 5 && currentLevel < 10) lockSpacing = 3;
@@ -90,21 +86,11 @@ const checkIfCellIsLocked = (
   const nextL = findAdjacentLetter(idx, 1);
   const neighbors = [prevL, nextL].filter(n => n !== -1);
 
-  // If no neighbors, should not be locked
   if (neighbors.length === 0) return false;
-
-  // RULE 1: If ANY neighbor is solved NORMALLY (keyboard), unlock. (Standard Unlock)
   if (neighbors.some(n => isSolvedNormally(n))) return false;
-
-  // RULE 2: If the cell has ONLY ONE neighbor (edge case) and it is solved (any way), unlock.
-  // This satisfies the request for "last letter" or "first letter" locking scenarios.
   if (neighbors.length === 1 && isSolvedAtAll(neighbors[0])) return false;
-
-  // RULE 3: If ALL neighbors are solved (even via hints), unlock.
-  // This prevents the "Dead End" where a locked cell is surrounded by hint-revealed letters.
   if (neighbors.every(n => isSolvedAtAll(n))) return false;
 
-  // Otherwise, stay locked to prevent double-benefit from hints.
   return true;
 };
 
@@ -122,6 +108,7 @@ const App: React.FC = () => {
   const [isUndoConfirmVisible, setIsUndoConfirmVisible] = useState(false);
   const [currentLevelDifficulty, setCurrentLevelDifficulty] = useState<Difficulty>(Difficulty.EASY);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
+  const [reportToast, setReportToast] = useState(false);
   
   const [history, setHistory] = useState<UserState[]>([]);
   const [preFetchedLevel, setPreFetchedLevel] = useState<{level: GameLevel, difficulty: Difficulty} | null>(null);
@@ -239,7 +226,6 @@ const App: React.FC = () => {
         const parsed = JSON.parse(saved);
         if (parsed.levelData && parsed.userState) {
           setLevelData(parsed.levelData);
-          // Sync hints from stats upon loading
           setUserState({
             ...parsed.userState,
             hintsRemaining: stats.hintsRemaining
@@ -273,6 +259,37 @@ const App: React.FC = () => {
     });
     playSound('win');
   };
+
+  const handleImportData = useCallback((data: any) => {
+    if (!data || !data.stats) return;
+    setStats(data.stats);
+    persistStats(data.stats);
+    if (data.difficulty) setDifficultySetting(data.difficulty);
+    if (data.fontSize) setFontSize(data.fontSize);
+    setVibrationEnabled(data.vibrationEnabled ?? true);
+    setSoundEnabled(data.soundEnabled ?? true);
+    localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
+    window.location.reload();
+  }, []);
+
+  const handleReportMistake = useCallback(() => {
+    const email = "cryptoheb@gmail.com";
+    const subject = encodeURIComponent("דיווח על טעות באלוף הצופן");
+    let body = "שלום צוות אלוף הצופן,\n\nמצאתי טעות בציטוט הבא:\n\n";
+    
+    if (levelData) {
+      body += `ציטוט: "${levelData.quote}"\n`;
+      body += `מחבר: ${levelData.author}\n`;
+      body += `רמת קושי: ${currentLevelDifficulty}\n`;
+      body += `שלב: ${stats.currentLevel}\n`;
+    }
+    
+    body += "\nפירוט הטעות:\n";
+    
+    window.location.href = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    setReportToast(true);
+    setTimeout(() => setReportToast(false), 3000);
+  }, [levelData, currentLevelDifficulty, stats.currentLevel]);
 
   const hasUnclaimedAchievements = useMemo(() => {
     const uniqueAuthorsCount = new Set(stats.usedQuotes.map(q => q.author)).size;
@@ -380,7 +397,6 @@ const App: React.FC = () => {
         claimedAchievements: [...prev.claimedAchievements, id]
       };
       
-      // Update active userState hint count as well
       setUserState(currentU => ({ ...currentU, hintsRemaining: newHints }));
       persistStats(updatedStats);
       
@@ -606,7 +622,6 @@ const App: React.FC = () => {
       return; 
     }
 
-    // New logic: Use isCellLocked but pass isFromLockedMenu=true if coming from specific lock-reveal hint.
     if (!isFromLockedMenu && isCellLocked(idx)) {
       playSound('locked');
       setIsBoardShaking(true);
@@ -678,7 +693,6 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const { levelData: savedLevel, userState: savedUserState, difficulty: savedDiff, history: savedHistory } = JSON.parse(saved);
-        // Ensure the hint count is synced from the current stats
         const syncedUserState = {
           ...savedUserState,
           hintsRemaining: stats.hintsRemaining
@@ -914,13 +928,33 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {reportToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl font-black text-sm animate-in slide-in-from-top flex items-center gap-3">
+          <i className="fa-solid fa-envelope text-emerald-400"></i>
+          אפליקציית המייל נפתחה לדיווח. תודה!
+        </div>
+      )}
       
       {currentScreen === Screen.HOME ? (
         <MainMenu onNewGame={() => startNewGame()} onContinue={continueGame} hasSavedGame={hasSavedGame} onStats={() => setCurrentScreen(Screen.STATS)} onSettings={() => setCurrentScreen(Screen.SETTINGS)} onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} onShowTutorial={() => setShowTutorial(true)} onOpenShop={() => setShowShop(true)} currentLevel={stats.currentLevel || 1} hasUnclaimedAchievements={hasUnclaimedAchievements} />
       ) : currentScreen === Screen.STATS ? (
         <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
       ) : currentScreen === Screen.SETTINGS ? (
-        <SettingsScreen difficulty={difficultySetting} onDifficultyChange={handleDifficultyChange} fontSize={fontSize} onFontSizeChange={(f) => setFontSize(f)} vibrationEnabled={vibrationEnabled} onVibrationToggle={() => setVibrationEnabled(!vibrationEnabled)} soundEnabled={soundEnabled} onSoundToggle={() => setSoundEnabled(!soundEnabled)} onBack={() => setCurrentScreen(Screen.HOME)} />
+        <SettingsScreen 
+          difficulty={difficultySetting} 
+          onDifficultyChange={handleDifficultyChange} 
+          fontSize={fontSize} 
+          onFontSizeChange={(f) => setFontSize(f)} 
+          vibrationEnabled={vibrationEnabled} 
+          onVibrationToggle={() => setVibrationEnabled(!vibrationEnabled)} 
+          soundEnabled={soundEnabled} 
+          onSoundToggle={() => setSoundEnabled(!soundEnabled)} 
+          onBack={() => setCurrentScreen(Screen.HOME)}
+          stats={stats}
+          onImportData={handleImportData}
+          onReportMistake={handleReportMistake}
+        />
       ) : currentScreen === Screen.ACHIEVEMENTS ? (
         <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
       ) : (
@@ -953,21 +987,21 @@ const App: React.FC = () => {
             <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
             {status === GameStatus.PLAYING && (
               <div className="opacity-30 hover:opacity-100 transition-opacity">
-                <a 
-                  href="mailto:cryptoheb@gmail.com?subject=דיווח על טעות כתיב באלוף הצופן" 
+                <button 
+                  onClick={handleReportMistake} 
                   className="text-[9px] font-bold text-slate-400 flex items-center gap-1 border border-slate-200 border-dashed px-2 py-0.5 rounded-full transition-colors hover:bg-slate-50"
                 >
                   <i className="fa-solid fa-pen-nib"></i>
                   דווח על טעות
-                </a>
+                </button>
               </div>
             )}
           </div>
           {status === GameStatus.WON && isOverlayVisible && (
-            <GameOverlay title="כל הכבוד!" message={`סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={() => startNewGame()} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} />
+            <GameOverlay title="כל הכבוד!" message={`סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={() => startNewGame()} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} onReportMistake={handleReportMistake} />
           )}
           {status === GameStatus.LOST && isOverlayVisible && (
-            <GameOverlay title="המשחק נגמר" message="עשית יותר מדי טעויות. נסה שוב!" type="lost" onAction={() => startNewGame()} onRetry={handleRetryLevel} onReveal={revealSolution} author={levelData?.author} showRevealButton={true} />
+            <GameOverlay title="המשחק נגמר" message="עשית יותר מדי טעויות. נסה שוב!" type="lost" onAction={() => startNewGame()} onRetry={handleRetryLevel} onReveal={revealSolution} author={levelData?.author} showRevealButton={true} onReportMistake={handleReportMistake} />
           )}
         </div>
       )}
