@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Statistics } from '../types';
 
 interface StatsScreenProps {
@@ -8,6 +8,7 @@ interface StatsScreenProps {
 }
 
 const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
+  const [showSkillInfo, setShowSkillInfo] = useState(false);
   const winRate = stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
   
   const accuracyRate = useMemo(() => {
@@ -46,6 +47,45 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
 
   return (
     <div className="flex flex-col items-center h-full p-4 md:p-6 bg-slate-50 overflow-y-auto" dir="rtl">
+      {/* Skill Rating Explanation Overlay */}
+      {showSkillInfo && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/40" onClick={() => setShowSkillInfo(false)}>
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 text-center relative border-b-8 border-blue-500" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowSkillInfo(false)} className="absolute top-4 left-4 text-slate-400 hover:text-slate-600">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 text-xl">
+              <i className="fa-solid fa-calculator"></i>
+            </div>
+            <h3 className="text-xl font-black text-slate-800 mb-4">איך מחושב המדד?</h3>
+            <div className="space-y-4 text-right">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 font-black">10</div>
+                <div className="text-sm font-bold text-slate-600">נקודות על כל שלב שסיימת</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 font-black">25</div>
+                <div className="text-sm font-bold text-slate-600">בונוס על כל משחק מושלם</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 font-black">15</div>
+                <div className="text-sm font-bold text-slate-600">בונוס על ניצחון ברמה קשה</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 font-black">30</div>
+                <div className="text-sm font-bold text-slate-600">בונוס על ניצחון בקשה מאוד</div>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowSkillInfo(false)}
+              className="mt-8 w-full py-4 bg-blue-600 text-white rounded-xl font-black hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
+            >
+              הבנתי!
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="w-full flex items-center justify-between mb-8 flex-shrink-0">
         <button onClick={onBack} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-sm transition-transform active:scale-95">
@@ -67,7 +107,15 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
              </div>
           </div>
           
-          <div className="text-2xl font-black text-slate-800 mb-1">מדד מיומנות: {skillRating}</div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="text-2xl font-black text-slate-800">מדד מיומנות: {skillRating}</div>
+            <button 
+              onClick={() => setShowSkillInfo(true)}
+              className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-blue-50 hover:text-blue-500 transition-colors"
+            >
+              <i className="fa-solid fa-circle-info text-sm"></i>
+            </button>
+          </div>
           <div className="text-slate-400 text-[11px] font-black uppercase tracking-widest mb-6">Mastery Score Overview</div>
           
           <div className="grid grid-cols-2 gap-3 w-full">

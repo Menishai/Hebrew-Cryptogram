@@ -40,6 +40,8 @@ export interface Statistics {
   claimedAchievements: string[];
   // Advanced tracking
   totalMistakes: number;
+  // Purchases
+  isAdFree?: boolean;
 }
 
 export interface GameLevel {

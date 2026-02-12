@@ -12,6 +12,7 @@ import SettingsScreen from './components/SettingsScreen';
 import AchievementsScreen from './components/AchievementsScreen';
 import TutorialOverlay from './components/TutorialOverlay';
 import HintModal from './components/HintModal';
+import ShopModal from './components/ShopModal';
 import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 
@@ -114,6 +115,7 @@ const App: React.FC = () => {
   const [celebratingWordIdx, setCelebratingWordIdx] = useState<number | null>(null);
   const [isOverlayVisible, setIsOverlayVisible] = useState(true);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showShop, setShowShop] = useState(false);
   const [isBoardShaking, setIsBoardShaking] = useState(false);
   const [isHintMode, setIsHintMode] = useState(false);
   const [showHintMenu, setShowHintMenu] = useState(false);
@@ -173,7 +175,8 @@ const App: React.FC = () => {
       hardWinsCount: 0,
       veryHardWinsCount: 0,
       claimedAchievements: [],
-      totalMistakes: 0
+      totalMistakes: 0,
+      isAdFree: false
     };
     if (!saved) return initialStats;
     try {
@@ -185,7 +188,8 @@ const App: React.FC = () => {
         currentLevel: parsed.currentLevel || 1,
         usedQuotes: Array.isArray(parsed.usedQuotes) ? parsed.usedQuotes : [],
         claimedAchievements: Array.isArray(parsed.claimedAchievements) ? parsed.claimedAchievements : [],
-        totalMistakes: parsed.totalMistakes || 0
+        totalMistakes: parsed.totalMistakes || 0,
+        isAdFree: !!parsed.isAdFree
       };
     } catch {
       return initialStats;
@@ -250,6 +254,25 @@ const App: React.FC = () => {
       }
     }
   }, []);
+
+  const handlePurchaseHints = (amount: number) => {
+    setStats(prev => {
+      const newStats = { ...prev, hintsRemaining: prev.hintsRemaining + amount };
+      persistStats(newStats);
+      return newStats;
+    });
+    setUserState(prev => ({ ...prev, hintsRemaining: prev.hintsRemaining + amount }));
+    playSound('hint');
+  };
+
+  const handlePurchaseRemoveAds = () => {
+    setStats(prev => {
+      const newStats = { ...prev, isAdFree: true };
+      persistStats(newStats);
+      return newStats;
+    });
+    playSound('win');
+  };
 
   const hasUnclaimedAchievements = useMemo(() => {
     const uniqueAuthorsCount = new Set(stats.usedQuotes.map(q => q.author)).size;
@@ -844,6 +867,15 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative select-none" dir="rtl">
       {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
+      {showShop && (
+        <ShopModal 
+          onClose={() => setShowShop(false)} 
+          onPurchaseHints={handlePurchaseHints}
+          onPurchaseRemoveAds={handlePurchaseRemoveAds}
+          isAdFree={!!stats.isAdFree}
+          hintsRemaining={stats.hintsRemaining}
+        />
+      )}
       
       {showHintMenu && (
         <HintModal 
@@ -884,7 +916,7 @@ const App: React.FC = () => {
       )}
       
       {currentScreen === Screen.HOME ? (
-        <MainMenu onNewGame={() => startNewGame()} onContinue={continueGame} hasSavedGame={hasSavedGame} onStats={() => setCurrentScreen(Screen.STATS)} onSettings={() => setCurrentScreen(Screen.SETTINGS)} onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} hasUnclaimedAchievements={hasUnclaimedAchievements} />
+        <MainMenu onNewGame={() => startNewGame()} onContinue={continueGame} hasSavedGame={hasSavedGame} onStats={() => setCurrentScreen(Screen.STATS)} onSettings={() => setCurrentScreen(Screen.SETTINGS)} onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} onShowTutorial={() => setShowTutorial(true)} onOpenShop={() => setShowShop(true)} currentLevel={stats.currentLevel || 1} hasUnclaimedAchievements={hasUnclaimedAchievements} />
       ) : currentScreen === Screen.STATS ? (
         <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
       ) : currentScreen === Screen.SETTINGS ? (

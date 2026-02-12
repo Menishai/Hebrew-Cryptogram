@@ -9,6 +9,7 @@ interface MainMenuProps {
   onSettings: () => void;
   onAchievements: () => void;
   onShowTutorial: () => void;
+  onOpenShop: () => void;
   currentLevel: number;
   hasUnclaimedAchievements?: boolean;
 }
@@ -21,6 +22,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
   onSettings, 
   onAchievements,
   onShowTutorial, 
+  onOpenShop,
   currentLevel,
   hasUnclaimedAchievements = false
 }) => {
@@ -30,14 +32,23 @@ const MainMenu: React.FC<MainMenuProps> = ({
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 blur-[100px] rounded-full"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-100/30 blur-[100px] rounded-full"></div>
 
-      {/* Help Button */}
-      <button 
-        onClick={onShowTutorial}
-        className="absolute top-6 right-6 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-50 transition-all active:scale-95 z-10"
-        title="איך משחקים?"
-      >
-        <i className="fa-solid fa-question text-lg md:text-xl"></i>
-      </button>
+      {/* Floating Action Buttons Area (Top Right) */}
+      <div className="absolute top-6 right-6 flex flex-col gap-3 z-10">
+        <button 
+          onClick={onShowTutorial}
+          className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-50 transition-all active:scale-95"
+          title="איך משחקים?"
+        >
+          <i className="fa-solid fa-question text-lg md:text-xl"></i>
+        </button>
+        <button 
+          onClick={onOpenShop}
+          className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-amber-500 shadow-sm border border-amber-100 hover:bg-amber-50 transition-all active:scale-95"
+          title="חנות"
+        >
+          <i className="fa-solid fa-cart-shopping text-lg md:text-xl"></i>
+        </button>
+      </div>
 
       {/* New Modern Logo Section */}
       <div className="mt-8 md:mt-12 mb-10 md:mb-14 relative z-10">
