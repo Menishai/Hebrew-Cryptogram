@@ -48,6 +48,29 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onComplete }) => {
       )
     },
     {
+      title: "החידון היומי",
+      description: "אתגר מיוחד שמתחלף כל יום. יש לכם בדיוק 3 ניסיונות לפצח אותו. נכשלתם? לא תוכלו לראות את הפתרון - אז תחשבו טוב!",
+      icon: "fa-calendar-day",
+      color: "text-rose-500",
+      bg: "bg-rose-50",
+      example: (
+        <div className="flex gap-3 justify-center">
+           <div className="w-12 h-14 bg-white border-2 border-rose-200 rounded-xl flex items-center justify-center shadow-sm relative overflow-hidden">
+              <span className="text-2xl font-black text-rose-500">28</span>
+              <div className="absolute top-0 w-full h-4 bg-rose-500"></div>
+           </div>
+           <div className="flex flex-col justify-center gap-1.5">
+             <div className="flex gap-1">
+               <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
+               <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
+               <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
+             </div>
+             <span className="text-[10px] font-bold text-slate-400">3 ניסיונות בלבד</span>
+           </div>
+        </div>
+      )
+    },
+    {
       title: "משבצות נעולות",
       description: "נתקלתם במנעול? אי אפשר לנחש אותן ישירות. פתחו קודם אות צמודה (מימין או משמאל) כדי לשחרר את הנעילה.",
       icon: "fa-lock",

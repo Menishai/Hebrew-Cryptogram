@@ -1,48 +1,93 @@
 
-import { GameLevel, Difficulty } from "../types";
+import { GameLevel, Difficulty, QuoteCategory } from "../types";
 import { QUOTES_DB } from "../data/quotes";
+import { SPECIAL_DAILY_QUOTES } from "../data/dailyQuotes";
 import { FINAL_TO_BASE, isHebrewLetter } from "../utils/textUtils";
 
 /**
- * Generates a cryptogram puzzle by selecting a quote from the local database.
- * Uses position-based revelation with exact percentage ranges.
+ * A simple seeded random generator to ensure everyone gets the same puzzle.
  */
+class SeededRandom {
+  private seed: number;
+  constructor(seedStr: string) {
+    let hash = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+      hash = (hash << 5) - hash + seedStr.charCodeAt(i);
+      hash |= 0;
+    }
+    this.seed = hash;
+  }
+  next() {
+    this.seed = (this.seed * 9301 + 49297) % 233280;
+    return this.seed / 233280;
+  }
+}
+
 export const generateCryptogramPuzzle = async (
   _requestedNumToReveal: number = 2, 
   excludedQuotes: string[] = [], 
   difficulty: Difficulty = Difficulty.MEDIUM, 
-  currentLevel: number = 1
+  currentLevel: number = 1,
+  activeCategories: QuoteCategory[] = ['proverb', 'song', 'source', 'famous']
 ): Promise<GameLevel> => {
-  
-  // Normalize string for comparison (remove extra spaces)
   const normalizeText = (text: string) => text.trim().replace(/\s+/g, ' ');
-
-  // 1. Filter database and prevent immediate repeats
   const normalizedExcluded = new Set(excludedQuotes.map(normalizeText));
+  const categorySet = new Set(activeCategories);
   
-  let pool = QUOTES_DB.filter(q => q.difficulty === difficulty);
-  
-  // Strict filtering: remove any quote that matches the excluded list
+  let pool = QUOTES_DB.filter(q => q.difficulty === difficulty && categorySet.has(q.category));
+  if (pool.length === 0 && activeCategories.length === 0) {
+    pool = QUOTES_DB.filter(q => q.difficulty === difficulty);
+  }
+
   let unplayed = pool.filter(q => !normalizedExcluded.has(normalizeText(q.quote)));
-  
-  // If we ran out of new quotes, reset the pool but try to avoid the VERY LAST played one
+  let wasCategoryExhausted = false;
+
   if (unplayed.length === 0) {
-    const lastPlayedText = excludedQuotes.length > 0 ? normalizeText(excludedQuotes[0]) : null;
-    unplayed = pool.filter(q => normalizeText(q.quote) !== lastPlayedText);
-    
-    // If still empty (e.g. pool size is 1), just use the pool
+    wasCategoryExhausted = true;
+    let globalPool = QUOTES_DB.filter(q => q.difficulty === difficulty);
+    unplayed = globalPool.filter(q => !normalizedExcluded.has(normalizeText(q.quote)));
     if (unplayed.length === 0) {
-      unplayed = pool;
+      const lastPlayedText = excludedQuotes.length > 0 ? normalizeText(excludedQuotes[0]) : null;
+      unplayed = globalPool.filter(q => normalizeText(q.quote) !== lastPlayedText);
+      if (unplayed.length === 0) unplayed = globalPool;
     }
   }
 
-  // 2. Pick a random quote from filtered pool
   const selected = unplayed[Math.floor(Math.random() * unplayed.length)];
-  const cleanQuote = selected.quote.trim();
+  const level = buildLevelFromQuote(selected.quote, selected.author, selected.year, difficulty, currentLevel);
+  (level as any).wasCategoryExhausted = wasCategoryExhausted;
+  return level;
+};
 
-  // 3. Mapping Logic
-  const letterToNum: Record<string, number> = {};
+export const generateDailyPuzzle = async (dateStr: string): Promise<GameLevel> => {
+  const sr = new SeededRandom(dateStr);
+  const date = new Date(dateStr);
+  const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
   
+  // Difficulty increases through the week
+  let difficulty = Difficulty.MEDIUM;
+  if (dayOfWeek === 0) difficulty = Difficulty.EASY;
+  else if (dayOfWeek === 3 || dayOfWeek === 4) difficulty = Difficulty.HARD;
+  else if (dayOfWeek === 5 || dayOfWeek === 6) difficulty = Difficulty.VERY_HARD;
+
+  let selectedQuote;
+  if (SPECIAL_DAILY_QUOTES[dateStr]) {
+    selectedQuote = SPECIAL_DAILY_QUOTES[dateStr];
+  } else {
+    const pool = QUOTES_DB.filter(q => q.difficulty === difficulty);
+    const index = Math.floor(sr.next() * pool.length);
+    selectedQuote = pool[index];
+  }
+
+  const level = buildLevelFromQuote(selectedQuote.quote, selectedQuote.author, (selectedQuote as any).year, difficulty, 10, sr);
+  level.isDaily = true;
+  level.dailyDate = dateStr;
+  return level;
+};
+
+function buildLevelFromQuote(quote: string, author: string, year: string | undefined, difficulty: Difficulty, levelNum: number, sr?: SeededRandom): GameLevel {
+  const cleanQuote = quote.trim();
+  const letterToNum: Record<string, number> = {};
   const uniqueLetters = new Set<string>();
   const letterPositions: number[] = [];
 
@@ -55,10 +100,13 @@ export const generateCryptogramPuzzle = async (
   }
 
   const numbers = Array.from({ length: 22 }, (_, i) => i + 1);
-  for (let i = numbers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-  }
+  const shuffle = (arr: any[]) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor((sr ? sr.next() : Math.random()) * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  };
+  shuffle(numbers);
 
   const baseLetterArray = Array.from(uniqueLetters);
   baseLetterArray.forEach((letter, index) => {
@@ -66,14 +114,9 @@ export const generateCryptogramPuzzle = async (
   });
 
   Object.entries(FINAL_TO_BASE).forEach(([final, base]) => {
-    if (letterToNum[base]) {
-      letterToNum[final] = letterToNum[base];
-    }
+    if (letterToNum[base]) letterToNum[final] = letterToNum[base];
   });
 
-  // 4. Dynamic Revelation (Position-Based)
-  const totalPositions = letterPositions.length;
-  
   const PERCENTAGES = {
     [Difficulty.EASY]: { min: 0.25, max: 0.35 },
     [Difficulty.MEDIUM]: { min: 0.14, max: 0.18 }, 
@@ -82,49 +125,32 @@ export const generateCryptogramPuzzle = async (
   };
 
   const range = PERCENTAGES[difficulty];
-  let targetPercent = Math.random() * (range.max - range.min) + range.min;
+  const randVal = sr ? sr.next() : Math.random();
+  let targetPercent = randVal * (range.max - range.min) + range.min;
 
   if (cleanQuote.length < 20) targetPercent += 0.05;
   if (cleanQuote.length > 50) targetPercent -= 0.02;
 
-  let targetRevealCount = Math.floor(totalPositions * targetPercent);
+  let targetRevealCount = Math.floor(letterPositions.length * targetPercent);
+  if (difficulty !== Difficulty.HARD && difficulty !== Difficulty.VERY_HARD) targetRevealCount = Math.max(targetRevealCount, 1);
 
-  // Boost initial levels
-  if (currentLevel === 1) targetRevealCount = Math.max(targetRevealCount, Math.floor(totalPositions * 0.45));
-  if (currentLevel === 2) targetRevealCount = Math.max(targetRevealCount, Math.floor(totalPositions * 0.35));
-
-  if (difficulty !== Difficulty.HARD && difficulty !== Difficulty.VERY_HARD) {
-    targetRevealCount = Math.max(targetRevealCount, 1);
-  }
-
-  const shuffledPositions = [...letterPositions].sort(() => Math.random() - 0.5);
+  const shuffledPositions = [...letterPositions].sort(() => (sr ? sr.next() : Math.random()) - 0.5);
   const revealedIndices = shuffledPositions.slice(0, targetRevealCount);
 
-  // 5. Gradual Lock Challenge Logic
   let isLockChallenge = false;
-  if (currentLevel >= 3) {
-    let prob = 0;
-    if (currentLevel < 5) {
-      prob = 0.3; // Low chance for levels 3-4
-    } else if (currentLevel < 10) {
-      prob = 0.6; // Higher chance for levels 5-9
-    } else {
-      prob = 0.85; // Very high for 10+
-    }
-    
-    // Harder modes are always more likely to have locks
+  if (levelNum >= 3) {
+    let prob = levelNum < 5 ? 0.3 : (levelNum < 10 ? 0.6 : 0.85);
     if (difficulty === Difficulty.HARD) prob += 0.15;
     if (difficulty === Difficulty.VERY_HARD) prob += 0.3;
-    
-    isLockChallenge = Math.random() < prob && cleanQuote.length > 15;
+    isLockChallenge = (sr ? sr.next() : Math.random()) < prob && cleanQuote.length > 15;
   }
 
   return {
     quote: cleanQuote,
-    author: selected.author,
-    year: selected.year,
+    author,
+    year,
     mapping: letterToNum,
     revealedIndices,
     isLockChallenge
   };
-};
+}

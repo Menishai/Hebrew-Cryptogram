@@ -11,13 +11,21 @@ export enum Screen {
   PLAYING = 'PLAYING',
   STATS = 'STATS',
   SETTINGS = 'SETTINGS',
-  ACHIEVEMENTS = 'ACHIEVEMENTS'
+  ACHIEVEMENTS = 'ACHIEVEMENTS',
+  DAILY_QUIZ = 'DAILY_QUIZ'
 }
 
 export enum FontSize {
   SMALL = 'SMALL',
   MEDIUM = 'MEDIUM',
   LARGE = 'LARGE'
+}
+
+export type QuoteCategory = 'proverb' | 'song' | 'source' | 'famous' | 'sports' | 'cinema';
+
+export interface DailyDayStats {
+  status: 'won' | 'lost' | 'none';
+  attempts: number;
 }
 
 export interface Statistics {
@@ -31,17 +39,28 @@ export interface Statistics {
   hasCompletedTutorial: boolean; 
   perfectGames: number; 
   hintsRemaining: number; 
-  // Reward counters
+  // Total Reward counters (for Stats page - including Daily)
   easyWinsCount: number;   
   mediumWinsCount: number; 
   hardWinsCount: number;   
   veryHardWinsCount: number;
+  // Career Achievement Tracking (Excluding Daily)
+  careerWins: number;
+  careerPerfectGames: number;
+  careerHardWins: number;
+  careerVeryHardWins: number;
+  careerBestStreak: number;
   // Achievement tracking
   claimedAchievements: string[];
   // Advanced tracking
   totalMistakes: number;
   // Purchases
   isAdFree?: boolean;
+  isSkipAnytimePurchased?: boolean;
+  isSportsPackPurchased?: boolean;
+  isCinemaPackPurchased?: boolean;
+  // Daily Quiz Tracking: Record<"YYYY-MM-DD", DailyDayStats>
+  dailyProgress?: Record<string, DailyDayStats>;
 }
 
 export interface GameLevel {
@@ -51,6 +70,8 @@ export interface GameLevel {
   mapping: Record<string, number>; 
   revealedIndices: number[]; 
   isLockChallenge?: boolean; 
+  isDaily?: boolean;
+  dailyDate?: string;
 }
 
 export interface UserState {

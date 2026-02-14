@@ -45,3 +45,23 @@ android/app/src/main/res/xml/config.xml
 resources/
 icons/
 icon.png
+
+# Android splash screen and launcher icons
+android/app/src/main/res/drawable*/
+android/app/src/main/res/mipmap*/
+android/app/src/main/res/layout/
+android/app/src/main/res/xml/
+android/app/src/androidTest/
+android/app/src/test/
+android/app/src/main/java/
+android/gradlew
+android/gradlew.bat
+android/gradle/
+android/gradle.properties
+android/capacitor.settings.gradle
+android/variables.gradle
+android/app/capacitor.build.gradle
+android/app/proguard-rules.pro
+android/app/.gitignore
+android/app/src/main/res/values/ic_launcher_background.xml
+android/app/src/main/res/values/styles.xml

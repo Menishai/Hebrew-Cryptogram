@@ -18,7 +18,13 @@ interface ShopModalProps {
   onClose: () => void;
   onPurchaseHints: (amount: number) => void;
   onPurchaseRemoveAds: () => void;
+  onPurchaseSkipAnytime: () => void;
+  onPurchaseSportsPack: () => void;
+  onPurchaseCinemaPack: () => void;
   isAdFree: boolean;
+  isSkipAnytimePurchased: boolean;
+  isSportsPackPurchased: boolean;
+  isCinemaPackPurchased: boolean;
   hintsRemaining: number;
 }
 
@@ -26,7 +32,13 @@ const ShopModal: React.FC<ShopModalProps> = ({
   onClose, 
   onPurchaseHints, 
   onPurchaseRemoveAds, 
+  onPurchaseSkipAnytime,
+  onPurchaseSportsPack,
+  onPurchaseCinemaPack,
   isAdFree,
+  isSkipAnytimePurchased,
+  isSportsPackPurchased,
+  isCinemaPackPurchased,
   hintsRemaining 
 }) => {
   const items: ShopItem[] = [
@@ -64,6 +76,41 @@ const ShopModal: React.FC<ShopModalProps> = ({
       tag: 'משתלם',
       gradient: 'from-purple-50 to-white',
       borderColor: 'border-purple-100'
+    },
+    { 
+      id: 'skip_anytime', 
+      title: 'ניתן לדלג בכל זמן', 
+      desc: 'דלג על שלב גם אחרי שהתחלת לנחש', 
+      icon: 'fa-forward-step', 
+      price: '₪4.90', 
+      reward: 'special', 
+      color: 'text-amber-600',
+      gradient: 'from-amber-50 to-white',
+      borderColor: 'border-amber-200'
+    },
+    { 
+      id: 'pack_sports', 
+      title: 'חבילת ספורט', 
+      desc: 'ציטוטי ספורט וקלישאות של שדרנים', 
+      icon: 'fa-football', 
+      price: '₪9.90', 
+      reward: 'special', 
+      color: 'text-blue-700',
+      tag: 'חדש',
+      gradient: 'from-blue-50 to-white',
+      borderColor: 'border-blue-200'
+    },
+    { 
+      id: 'pack_cinema', 
+      title: 'קולנוע וטלוויזיה', 
+      desc: 'סרטי קאלט וסדרות ישראליות', 
+      icon: 'fa-film', 
+      price: '₪9.90', 
+      reward: 'special', 
+      color: 'text-rose-600',
+      tag: 'חדש',
+      gradient: 'from-rose-50 to-white',
+      borderColor: 'border-rose-200'
     },
     { 
       id: 'remove_ads', 
@@ -109,7 +156,14 @@ const ShopModal: React.FC<ShopModalProps> = ({
         <div className="flex-1 overflow-y-auto px-6 space-y-4 custom-scrollbar pb-6 relative z-10">
           {items.map((item) => {
             const isAdsItem = item.id === 'remove_ads';
-            const disabled = isAdsItem && isAdFree;
+            const isSkipItem = item.id === 'skip_anytime';
+            const isSportsItem = item.id === 'pack_sports';
+            const isCinemaItem = item.id === 'pack_cinema';
+            
+            const disabled = (isAdsItem && isAdFree) || 
+                             (isSkipItem && isSkipAnytimePurchased) ||
+                             (isSportsItem && isSportsPackPurchased) ||
+                             (isCinemaItem && isCinemaPackPurchased);
 
             return (
               <button
@@ -117,6 +171,9 @@ const ShopModal: React.FC<ShopModalProps> = ({
                 disabled={disabled}
                 onClick={() => {
                   if (isAdsItem) onPurchaseRemoveAds();
+                  else if (isSkipItem) onPurchaseSkipAnytime();
+                  else if (isSportsItem) onPurchaseSportsPack();
+                  else if (isCinemaItem) onPurchaseCinemaPack();
                   else onPurchaseHints(item.reward as number);
                 }}
                 className={`w-full p-5 rounded-[2rem] border-2 flex items-center gap-4 transition-all text-right relative group overflow-hidden ${

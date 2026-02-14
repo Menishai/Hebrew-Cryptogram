@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Difficulty, FontSize, Statistics } from '../types';
+import { Difficulty, FontSize, Statistics, QuoteCategory } from '../types';
 import { encodeSaveData, decodeSaveData } from '../utils/saveUtils';
 
 interface SettingsScreenProps {
@@ -16,6 +16,8 @@ interface SettingsScreenProps {
   stats: Statistics;
   onImportData: (data: any) => void;
   onReportMistake?: () => void;
+  activeCategories: QuoteCategory[];
+  onCategoriesChange: (cats: QuoteCategory[]) => void;
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ 
@@ -30,7 +32,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onBack,
   stats,
   onImportData,
-  onReportMistake
+  onReportMistake,
+  activeCategories,
+  onCategoriesChange
 }) => {
   const [importMode, setImportMode] = useState(false);
   const [exportMode, setExportMode] = useState(false);
@@ -51,6 +55,26 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     { id: FontSize.MEDIUM, label: 'בינוני', previewSize: 'text-2xl' },
     { id: FontSize.LARGE, label: 'גדול', previewSize: 'text-4xl' },
   ];
+
+  const packOptions = [
+    { id: 'proverb', label: 'פתגמים וציטוטים כלליים', purchased: true },
+    { id: 'song', label: 'שירים ישראליים', purchased: true },
+    { id: 'source', label: 'מקורות ויהדות', purchased: true },
+    { id: 'famous', label: 'אישים מפורסמים', purchased: true },
+    { id: 'sports', label: 'ספורט וקלישאות', purchased: stats.isSportsPackPurchased },
+    { id: 'cinema', label: 'קולנוע וטלוויזיה', purchased: stats.isCinemaPackPurchased },
+  ];
+
+  const toggleCategory = (catId: QuoteCategory) => {
+    let newCats: QuoteCategory[];
+    if (activeCategories.includes(catId)) {
+      if (activeCategories.length <= 1) return; // Must have at least one
+      newCats = activeCategories.filter(c => c !== catId);
+    } else {
+      newCats = [...activeCategories, catId];
+    }
+    onCategoriesChange(newCats);
+  };
 
   const handleExport = () => {
     const saveData = {
@@ -155,6 +179,33 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </button>
             ))}
           </div>
+        </section>
+
+        {/* Category Pack Section */}
+        <section>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">חבילות תוכן</h3>
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100">
+            {packOptions.map((pack) => (
+              <div key={pack.id} className={`flex items-center justify-between p-4 ${!pack.purchased ? 'opacity-40' : ''}`}>
+                <div className="flex items-center gap-3 text-right">
+                  <span className={`text-sm font-bold ${activeCategories.includes(pack.id as QuoteCategory) ? 'text-blue-700' : 'text-slate-600'}`}>
+                    {pack.label}
+                  </span>
+                  {!pack.purchased && <i className="fa-solid fa-lock text-[10px] text-slate-400"></i>}
+                </div>
+                <button 
+                  disabled={!pack.purchased}
+                  onClick={() => toggleCategory(pack.id as QuoteCategory)}
+                  className={`w-11 h-6 rounded-full relative transition-colors ${activeCategories.includes(pack.id as QuoteCategory) ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${activeCategories.includes(pack.id as QuoteCategory) ? 'left-6' : 'left-1'}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {!stats.isSportsPackPurchased && !stats.isCinemaPackPurchased && (
+            <p className="text-[10px] text-slate-400 font-bold mt-2 px-2 text-center">חבילות תוכן חדשות זמינות בחנות!</p>
+          )}
         </section>
 
         {/* Preferences Section */}

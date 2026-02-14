@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { GameLevel, UserState, GameStatus, Difficulty, Screen, Statistics, FontSize } from './types';
-import { generateCryptogramPuzzle } from './services/puzzleService';
+import { GameLevel, UserState, GameStatus, Difficulty, Screen, Statistics, FontSize, QuoteCategory, DailyDayStats } from './types';
+import { generateCryptogramPuzzle, generateDailyPuzzle } from './services/puzzleService';
 import Header from './components/Header';
 import Board from './components/Board';
 import Keyboard from './components/Keyboard';
@@ -10,6 +10,7 @@ import MainMenu from './components/MainMenu';
 import StatsScreen from './components/StatsScreen';
 import SettingsScreen from './components/SettingsScreen';
 import AchievementsScreen from './components/AchievementsScreen';
+import DailyQuizCalendar from './components/DailyQuizCalendar';
 import TutorialOverlay from './components/TutorialOverlay';
 import HintModal from './components/HintModal';
 import ShopModal from './components/ShopModal';
@@ -33,9 +34,10 @@ const STORAGE_KEYS = {
   SOUND: 'cryptogram-sound',
   FONT_SIZE: 'cryptogram-font-size',
   LAST_SCREEN: 'cryptogram-last-screen',
+  ACTIVE_CATEGORIES: 'cryptogram-active-categories',
 };
 
-const MAX_USED_QUOTES_HISTORY = 200;
+const MAX_USED_QUOTES_HISTORY = 1000;
 const CELEBRATION_DURATION = 2000;
 
 const checkIfCellIsLocked = (
@@ -47,7 +49,7 @@ const checkIfCellIsLocked = (
   hintRevealedIndices: number[] = []
 ): boolean => {
   if (!levelData?.isLockChallenge || status !== GameStatus.PLAYING) return false;
-  if (currentLevel < 3) return false; 
+  if (currentLevel < 3 && !levelData.isDaily) return false; 
 
   const isLetter = (i: number) => i >= 0 && i < levelData.quote.length && isHebrewLetter(levelData.quote[i]);
   
@@ -68,15 +70,19 @@ const checkIfCellIsLocked = (
   if (isFirstLetterOfWord) return false;
 
   let lockSpacing = 2;
-  if (currentLevel >= 3 && currentLevel < 5) lockSpacing = 5;
-  else if (currentLevel >= 5 && currentLevel < 10) lockSpacing = 3;
+  if (!levelData.isDaily) {
+    if (currentLevel >= 3 && currentLevel < 5) lockSpacing = 5;
+    else if (currentLevel >= 5 && currentLevel < 10) lockSpacing = 3;
+  } else {
+    lockSpacing = 3;
+  }
   
   if (idx % lockSpacing !== 0) return false;
 
   const findAdjacentLetter = (start: number, direction: number) => {
     let current = start + direction;
     while (current >= 0 && current < levelData.quote.length) {
-      if (isHebrewLetter(levelData.quote[current])) return current;
+      if (isLetter(current)) return current;
       current += direction;
     }
     return -1;
@@ -109,6 +115,7 @@ const App: React.FC = () => {
   const [currentLevelDifficulty, setCurrentLevelDifficulty] = useState<Difficulty>(Difficulty.EASY);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
   const [reportToast, setReportToast] = useState(false);
+  const [packExhaustedToast, setPackExhaustedToast] = useState(false);
   
   const [history, setHistory] = useState<UserState[]>([]);
   const [preFetchedLevel, setPreFetchedLevel] = useState<{level: GameLevel, difficulty: Difficulty} | null>(null);
@@ -142,6 +149,16 @@ const App: React.FC = () => {
     return saved === null ? true : saved === 'true';
   });
 
+  const [activeCategories, setActiveCategories] = useState<QuoteCategory[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_CATEGORIES);
+    if (!saved) return ['proverb', 'song', 'source', 'famous'];
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return ['proverb', 'song', 'source', 'famous'];
+    }
+  });
+
   const playSound = useGameAudio(soundEnabled);
 
   const [stats, setStats] = useState<Statistics>(() => {
@@ -161,9 +178,18 @@ const App: React.FC = () => {
       mediumWinsCount: 0,
       hardWinsCount: 0,
       veryHardWinsCount: 0,
+      careerWins: 0,
+      careerPerfectGames: 0,
+      careerHardWins: 0,
+      careerVeryHardWins: 0,
+      careerBestStreak: 0,
       claimedAchievements: [],
       totalMistakes: 0,
-      isAdFree: false
+      isAdFree: false,
+      isSkipAnytimePurchased: false,
+      isSportsPackPurchased: false,
+      isCinemaPackPurchased: false,
+      dailyProgress: {}
     };
     if (!saved) return initialStats;
     try {
@@ -176,7 +202,11 @@ const App: React.FC = () => {
         usedQuotes: Array.isArray(parsed.usedQuotes) ? parsed.usedQuotes : [],
         claimedAchievements: Array.isArray(parsed.claimedAchievements) ? parsed.claimedAchievements : [],
         totalMistakes: parsed.totalMistakes || 0,
-        isAdFree: !!parsed.isAdFree
+        isAdFree: !!parsed.isAdFree,
+        isSkipAnytimePurchased: !!parsed.isSkipAnytimePurchased,
+        isSportsPackPurchased: !!parsed.isSportsPackPurchased,
+        isCinemaPackPurchased: !!parsed.isCinemaPackPurchased,
+        dailyProgress: parsed.dailyProgress || {}
       };
     } catch {
       return initialStats;
@@ -209,11 +239,12 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.VIBRATION, String(vibrationEnabled)); }, [vibrationEnabled]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SOUND, String(soundEnabled)); }, [soundEnabled]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.LAST_SCREEN, currentScreen); }, [currentScreen]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.ACTIVE_CATEGORIES, JSON.stringify(activeCategories)); }, [activeCategories]);
   
   useEffect(() => { persistStats(stats); }, [stats]);
 
   useEffect(() => {
-    if (currentScreen === Screen.PLAYING && levelData && status === GameStatus.PLAYING) {
+    if (currentScreen === Screen.PLAYING && levelData && status === GameStatus.PLAYING && !levelData.isDaily) {
       persistGameState({ levelData, userState, difficulty: currentLevelDifficulty, history });
     }
   }, [currentScreen, levelData, userState, currentLevelDifficulty, status, history]);
@@ -224,7 +255,7 @@ const App: React.FC = () => {
     if (saved && (lastScreen === Screen.PLAYING)) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.levelData && parsed.userState) {
+        if (parsed.levelData && parsed.userState && !parsed.levelData.isDaily) {
           setLevelData(parsed.levelData);
           setUserState({
             ...parsed.userState,
@@ -260,6 +291,41 @@ const App: React.FC = () => {
     playSound('win');
   };
 
+  const handlePurchaseSkipAnytime = () => {
+    setStats(prev => {
+      const newStats = { ...prev, isSkipAnytimePurchased: true };
+      persistStats(newStats);
+      return newStats;
+    });
+    playSound('win');
+  };
+
+  const handlePurchaseSportsPack = () => {
+    setStats(prev => {
+      const newStats = { ...prev, isSportsPackPurchased: true };
+      persistStats(newStats);
+      return newStats;
+    });
+    if (!activeCategories.includes('sports')) {
+      setActiveCategories(prev => [...prev, 'sports']);
+      setPreFetchedLevel(null);
+    }
+    playSound('win');
+  };
+
+  const handlePurchaseCinemaPack = () => {
+    setStats(prev => {
+      const newStats = { ...prev, isCinemaPackPurchased: true };
+      persistStats(newStats);
+      return newStats;
+    });
+    if (!activeCategories.includes('cinema')) {
+      setActiveCategories(prev => [...prev, 'cinema']);
+      setPreFetchedLevel(null);
+    }
+    playSound('win');
+  };
+
   const handleImportData = useCallback((data: any) => {
     if (!data || !data.stats) return;
     setStats(data.stats);
@@ -286,36 +352,36 @@ const App: React.FC = () => {
     
     body += "\nפירוט הטעות:\n";
     
-    window.location.href = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:cryptoheb@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
     setReportToast(true);
     setTimeout(() => setReportToast(false), 3000);
   }, [levelData, currentLevelDifficulty, stats.currentLevel]);
 
   const hasUnclaimedAchievements = useMemo(() => {
     const uniqueAuthorsCount = new Set(stats.usedQuotes.map(q => q.author)).size;
-    const challengeWins = (stats.hardWinsCount || 0) + (stats.veryHardWinsCount || 0);
+    const challengeWins = (stats.careerHardWins || 0) + (stats.careerVeryHardWins || 0);
     
     const milestones = [
-      { id: 'streak_3', achieved: stats.bestStreak >= 3 },
-      { id: 'streak_7', achieved: stats.bestStreak >= 7 },
-      { id: 'streak_15', achieved: stats.bestStreak >= 15 },
-      { id: 'streak_30', achieved: stats.bestStreak >= 30 },
-      { id: 'streak_50', achieved: stats.bestStreak >= 50 },
+      { id: 'streak_3', achieved: stats.careerBestStreak >= 3 },
+      { id: 'streak_7', achieved: stats.careerBestStreak >= 7 },
+      { id: 'streak_15', achieved: stats.careerBestStreak >= 15 },
+      { id: 'streak_30', achieved: stats.careerBestStreak >= 30 },
+      { id: 'streak_50', achieved: stats.careerBestStreak >= 50 },
       { id: 'level_10', achieved: (stats.currentLevel - 1) >= 10 },
       { id: 'level_25', achieved: (stats.currentLevel - 1) >= 25 },
       { id: 'level_50', achieved: (stats.currentLevel - 1) >= 50 },
       { id: 'level_100', achieved: (stats.currentLevel - 1) >= 100 },
       { id: 'level_250', achieved: (stats.currentLevel - 1) >= 250 },
-      { id: 'perfect_1', achieved: (stats.perfectGames || 0) >= 1 },
-      { id: 'perfect_5', achieved: (stats.perfectGames || 0) >= 5 },
-      { id: 'perfect_20', achieved: (stats.perfectGames || 0) >= 20 },
-      { id: 'perfect_50', achieved: (stats.perfectGames || 0) >= 50 },
-      { id: 'perfect_100', achieved: (stats.perfectGames || 0) >= 100 },
-      { id: 'total_10', achieved: stats.gamesWon >= 10 },
-      { id: 'total_25', achieved: stats.gamesWon >= 25 },
-      { id: 'total_50', achieved: stats.gamesWon >= 50 },
-      { id: 'total_100', achieved: stats.gamesWon >= 100 },
-      { id: 'total_250', achieved: stats.gamesWon >= 250 },
+      { id: 'perfect_1', achieved: (stats.careerPerfectGames || 0) >= 1 },
+      { id: 'perfect_5', achieved: (stats.careerPerfectGames || 0) >= 5 },
+      { id: 'perfect_20', achieved: (stats.careerPerfectGames || 0) >= 20 },
+      { id: 'perfect_50', achieved: (stats.careerPerfectGames || 0) >= 50 },
+      { id: 'perfect_100', achieved: (stats.careerPerfectGames || 0) >= 100 },
+      { id: 'total_10', achieved: stats.careerWins >= 10 },
+      { id: 'total_25', achieved: stats.careerWins >= 25 },
+      { id: 'total_50', achieved: stats.careerWins >= 50 },
+      { id: 'total_100', achieved: stats.careerWins >= 100 },
+      { id: 'total_250', achieved: stats.careerWins >= 250 },
       { id: 'diff_5', achieved: challengeWins >= 5 },
       { id: 'diff_15', achieved: challengeWins >= 15 },
       { id: 'diff_30', achieved: challengeWins >= 30 },
@@ -329,10 +395,25 @@ const App: React.FC = () => {
   }, [stats]);
 
   const canRestart = useMemo(() => {
+    if (levelData?.isDaily) return false;
+    if (stats.isSkipAnytimePurchased) return true;
     if (!levelData) return true;
     const currentGuessesCount = Object.keys(userState.cellGuesses).length;
     return currentGuessesCount <= levelData.revealedIndices.length;
-  }, [userState.cellGuesses, levelData]);
+  }, [userState.cellGuesses, levelData, stats.isSkipAnytimePurchased]);
+
+  const isDailyRetryAllowed = useMemo(() => {
+    if (!levelData?.isDaily || !levelData.dailyDate) return true;
+    const dayStats = stats.dailyProgress?.[levelData.dailyDate];
+    return !dayStats || dayStats.attempts < 3;
+  }, [levelData, stats.dailyProgress]);
+
+  const dailyAttemptsLeft = useMemo(() => {
+    if (!levelData?.isDaily || !levelData.dailyDate) return 0;
+    const dayStats = stats.dailyProgress?.[levelData.dailyDate];
+    const used = dayStats?.attempts || 0;
+    return Math.max(0, 3 - used);
+  }, [levelData, stats.dailyProgress]);
 
   const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0) => {
     setStats(prev => {
@@ -340,6 +421,18 @@ const App: React.FC = () => {
       newStats.gamesPlayed += 1;
       newStats.totalMistakes += mistakesCount;
       
+      const isDaily = !!levelInfo.isDaily;
+
+      if (isDaily && levelInfo.dailyDate) {
+        const dp = { ...(newStats.dailyProgress || {}) };
+        const dayStats = dp[levelInfo.dailyDate] || { status: 'none', attempts: 0 };
+        dayStats.attempts += 1;
+        if (won) dayStats.status = 'won';
+        else if (dayStats.attempts >= 3) dayStats.status = 'lost';
+        dp[levelInfo.dailyDate] = dayStats;
+        newStats.dailyProgress = dp;
+      }
+
       if (won) {
         const quoteObj = { text: levelInfo.quote, author: levelInfo.author, year: levelInfo.year };
         const alreadyExists = prev.usedQuotes.some(q => q.text === quoteObj.text);
@@ -350,9 +443,7 @@ const App: React.FC = () => {
         newStats.gamesWon += 1;
         newStats.currentStreak += 1;
         newStats.bestStreak = Math.max(newStats.bestStreak, newStats.currentStreak);
-        newStats.currentLevel = (prev.currentLevel || 1) + 1;
-        if (mistakesCount === 0) newStats.perfectGames = (prev.perfectGames || 0) + 1;
-
+        
         if (difficulty === Difficulty.VERY_HARD) {
           newStats.veryHardWinsCount += 1;
           newStats.hintsRemaining += 1;
@@ -376,6 +467,17 @@ const App: React.FC = () => {
             setRewardMessage(`נצחון מס' ${newStats.easyWinsCount} ברמה קלה! זכית ב-1 רמז!`);
           }
         }
+
+        if (!isDaily) {
+          newStats.careerWins += 1;
+          newStats.currentLevel = (prev.currentLevel || 1) + 1;
+          if (mistakesCount === 0) newStats.careerPerfectGames = (prev.careerPerfectGames || 0) + 1;
+          
+          if (difficulty === Difficulty.HARD) newStats.careerHardWins = (prev.careerHardWins || 0) + 1;
+          if (difficulty === Difficulty.VERY_HARD) newStats.careerVeryHardWins = (prev.careerVeryHardWins || 0) + 1;
+          
+          newStats.careerBestStreak = Math.max(newStats.careerBestStreak || 0, newStats.currentStreak);
+        }
       } else {
         newStats.gamesLost += 1;
         newStats.currentStreak = 0;
@@ -383,7 +485,10 @@ const App: React.FC = () => {
       persistStats(newStats);
       return newStats;
     });
-    localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
+    
+    if (!levelInfo.isDaily) {
+      localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
+    }
   }, []);
 
   const handleClaimAchievement = (id: string) => {
@@ -480,20 +585,20 @@ const App: React.FC = () => {
       const nextDifficulty = difficultySetting === 'AUTO' ? getRandomDifficulty(levelNum + 1) : difficultySetting;
       const config = DIFFICULTY_CONFIG[nextDifficulty];
       const excludedTexts = usedQuotes.map(q => q.text);
-      const level = await generateCryptogramPuzzle(config.numRevealed, excludedTexts, nextDifficulty, levelNum + 1);
+      const level = await generateCryptogramPuzzle(config.numRevealed, excludedTexts, nextDifficulty, levelNum + 1, activeCategories);
       setPreFetchedLevel({ level, difficulty: nextDifficulty });
     } catch (error) {
       console.error("Background pre-fetch failed:", error);
     } finally {
       isPreFetchingRef.current = false;
     }
-  }, [difficultySetting, getRandomDifficulty]);
+  }, [difficultySetting, getRandomDifficulty, activeCategories]);
 
   useEffect(() => {
-    if (!preFetchedLevel && !isPreFetchingRef.current && currentScreen === Screen.PLAYING) {
+    if (!preFetchedLevel && !isPreFetchingRef.current && currentScreen === Screen.PLAYING && !levelData?.isDaily) {
       preFetchNextLevel(stats.usedQuotes, stats.currentLevel);
     }
-  }, [currentScreen, preFetchedLevel, stats.usedQuotes, stats.currentLevel, preFetchNextLevel]);
+  }, [currentScreen, preFetchedLevel, stats.usedQuotes, stats.currentLevel, preFetchNextLevel, levelData]);
 
   const handleDifficultyChange = (newDiff: Difficulty | 'AUTO') => {
     setDifficultySetting(newDiff);
@@ -544,7 +649,15 @@ const App: React.FC = () => {
 
     setUserState(initialUserState);
     setStatus(GameStatus.PLAYING);
-    persistGameState({ levelData: newLevel, userState: initialUserState, difficulty: diff, history: [] });
+    
+    if (!newLevel.isDaily) {
+      persistGameState({ levelData: newLevel, userState: initialUserState, difficulty: diff, history: [] });
+    }
+
+    if ((newLevel as any).wasCategoryExhausted) {
+      setPackExhaustedToast(true);
+      setTimeout(() => setPackExhaustedToast(false), 6000);
+    }
   }, [stats.currentLevel, stats.hintsRemaining]);
 
   const startNewGame = useCallback(async (forcedDifficulty?: Difficulty) => {
@@ -565,20 +678,52 @@ const App: React.FC = () => {
       const targetDiff = forcedDifficulty || (difficultySetting === 'AUTO' ? getRandomDifficulty(stats.currentLevel) : difficultySetting);
       const config = DIFFICULTY_CONFIG[targetDiff];
       const excludedTexts = stats.usedQuotes.map(q => q.text);
-      const newLevel = await generateCryptogramPuzzle(config.numRevealed, excludedTexts, targetDiff, stats.currentLevel);
+      const newLevel = await generateCryptogramPuzzle(config.numRevealed, excludedTexts, targetDiff, stats.currentLevel, activeCategories);
       initLevelState(newLevel, targetDiff);
     } catch (error) {
       console.error("Failed to load game:", error);
       setCurrentScreen(Screen.HOME);
     }
-  }, [difficultySetting, stats.currentLevel, stats.usedQuotes, preFetchedLevel, initLevelState, getRandomDifficulty]);
+  }, [difficultySetting, stats.currentLevel, stats.usedQuotes, preFetchedLevel, initLevelState, getRandomDifficulty, activeCategories]);
+
+  const startDailyGame = useCallback(async (dateStr: string) => {
+    // Basic verification: Check if this day is already exhausted before starting
+    const dayStats = stats.dailyProgress?.[dateStr];
+    if (dayStats && dayStats.attempts >= 3 && dayStats.status !== 'won') {
+      setCurrentScreen(Screen.DAILY_QUIZ);
+      return;
+    }
+
+    setCurrentScreen(Screen.PLAYING);
+    setCelebratingWordIdx(null);
+    setIsOverlayVisible(true);
+    setStatus(GameStatus.LOADING);
+    try {
+      const level = await generateDailyPuzzle(dateStr);
+      let diff = Difficulty.MEDIUM;
+      const d = new Date(dateStr);
+      if (d.getDay() === 0) diff = Difficulty.EASY;
+      else if (d.getDay() === 3 || d.getDay() === 4) diff = Difficulty.HARD;
+      else if (d.getDay() === 5 || d.getDay() === 6) diff = Difficulty.VERY_HARD;
+
+      initLevelState(level, diff);
+    } catch (e) {
+      setCurrentScreen(Screen.DAILY_QUIZ);
+    }
+  }, [initLevelState, stats.dailyProgress]);
 
   const handleRetryLevel = useCallback(() => {
     if (!levelData) return;
+    
+    if (levelData.isDaily && !isDailyRetryAllowed) {
+      setCurrentScreen(Screen.DAILY_QUIZ);
+      return;
+    }
+
     setCelebratingWordIdx(null);
     setIsOverlayVisible(true);
     initLevelState(levelData, currentLevelDifficulty);
-  }, [levelData, currentLevelDifficulty, initLevelState]);
+  }, [levelData, currentLevelDifficulty, initLevelState, isDailyRetryAllowed]);
 
   const handleHintClick = useCallback(() => {
     if (status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
@@ -856,7 +1001,10 @@ const App: React.FC = () => {
       setUserState(prev => {
         const newMistakes = prev.mistakes + 1;
         const newFeedback = { ...prev.cellFeedback, [idx]: 'wrong' as const };
-        if (newMistakes >= prev.maxMistakes) { setStatus(GameStatus.LOST); updateStats(false, levelData, currentLevelDifficulty, newMistakes); }
+        if (newMistakes >= prev.maxMistakes) { 
+          setStatus(GameStatus.LOST); 
+          updateStats(false, levelData, currentLevelDifficulty, newMistakes); 
+        }
         return { ...prev, mistakes: newMistakes, cellFeedback: newFeedback, cellGuesses: { ...prev.cellGuesses, [idx]: letter } };
       });
       setTimeout(() => {
@@ -876,6 +1024,19 @@ const App: React.FC = () => {
     else setUserState(prev => ({ ...prev, selectedCellIndex: idx }));
   };
 
+  const handleActiveCategoriesChange = (cats: QuoteCategory[]) => {
+    setActiveCategories(cats);
+    setPreFetchedLevel(null);
+  };
+
+  const handleGameOverAction = () => {
+    if (levelData?.isDaily) {
+      setCurrentScreen(Screen.DAILY_QUIZ);
+    } else {
+      startNewGame();
+    }
+  };
+
   const hasSavedGame = !!localStorage.getItem(STORAGE_KEYS.GAME_STATE);
 
   return (
@@ -886,7 +1047,13 @@ const App: React.FC = () => {
           onClose={() => setShowShop(false)} 
           onPurchaseHints={handlePurchaseHints}
           onPurchaseRemoveAds={handlePurchaseRemoveAds}
+          onPurchaseSkipAnytime={handlePurchaseSkipAnytime}
+          onPurchaseSportsPack={handlePurchaseSportsPack}
+          onPurchaseCinemaPack={handlePurchaseCinemaPack}
           isAdFree={!!stats.isAdFree}
+          isSkipAnytimePurchased={!!stats.isSkipAnytimePurchased}
+          isSportsPackPurchased={!!stats.isSportsPackPurchased}
+          isCinemaPackPurchased={!!stats.isCinemaPackPurchased}
           hintsRemaining={stats.hintsRemaining}
         />
       )}
@@ -935,11 +1102,35 @@ const App: React.FC = () => {
           אפליקציית המייל נפתחה לדיווח. תודה!
         </div>
       )}
+
+      {packExhaustedToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold text-center animate-in slide-in-from-top flex flex-col items-center gap-1 border-2 border-blue-400">
+          <div className="flex items-center gap-2">
+            <i className="fa-solid fa-circle-info"></i>
+            <span>סיימת את כל הציטוטים בחבילה!</span>
+          </div>
+          <p className="text-[10px] opacity-90">בינתיים תקבל ציטוטים מקטגוריות אחרות. משפטים חדשים יתווספו בקרוב!</p>
+        </div>
+      )}
       
       {currentScreen === Screen.HOME ? (
-        <MainMenu onNewGame={() => startNewGame()} onContinue={continueGame} hasSavedGame={hasSavedGame} onStats={() => setCurrentScreen(Screen.STATS)} onSettings={() => setCurrentScreen(Screen.SETTINGS)} onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} onShowTutorial={() => setShowTutorial(true)} onOpenShop={() => setShowShop(true)} currentLevel={stats.currentLevel || 1} hasUnclaimedAchievements={hasUnclaimedAchievements} />
+        <MainMenu 
+          onNewGame={() => startNewGame()} 
+          onContinue={continueGame} 
+          hasSavedGame={hasSavedGame} 
+          onStats={() => setCurrentScreen(Screen.STATS)} 
+          onSettings={() => setCurrentScreen(Screen.SETTINGS)} 
+          onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} 
+          onDailyQuiz={() => setCurrentScreen(Screen.DAILY_QUIZ)}
+          onShowTutorial={() => setShowTutorial(true)} 
+          onOpenShop={() => setShowShop(true)} 
+          currentLevel={stats.currentLevel || 1} 
+          hasUnclaimedAchievements={hasUnclaimedAchievements} 
+        />
       ) : currentScreen === Screen.STATS ? (
         <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
+      ) : currentScreen === Screen.DAILY_QUIZ ? (
+        <DailyQuizCalendar dailyProgress={stats.dailyProgress || {}} onBack={() => setCurrentScreen(Screen.HOME)} onSelectDate={startDailyGame} />
       ) : currentScreen === Screen.SETTINGS ? (
         <SettingsScreen 
           difficulty={difficultySetting} 
@@ -954,12 +1145,14 @@ const App: React.FC = () => {
           stats={stats}
           onImportData={handleImportData}
           onReportMistake={handleReportMistake}
+          activeCategories={activeCategories}
+          onCategoriesChange={handleActiveCategoriesChange}
         />
       ) : currentScreen === Screen.ACHIEVEMENTS ? (
         <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
       ) : (
         <div className="flex flex-col h-full overflow-hidden">
-          <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => startNewGame()} onHome={() => setCurrentScreen(Screen.HOME)} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} />
+          <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
           <main 
             ref={mainScrollRef}
             style={{ fontSize: '16.5px' }}
@@ -976,9 +1169,9 @@ const App: React.FC = () => {
             {!isOverlayVisible && (status === GameStatus.WON || status === GameStatus.LOST) && (
               <div className="mt-8 flex flex-col items-center gap-4 animate-in slide-in-from-bottom duration-500 pb-8">
                 <div className="bg-green-100 text-green-800 px-6 py-2 rounded-full font-bold text-sm">הפתרון נחשף בלוח!</div>
-                <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-3">
+                <button onClick={handleGameOverAction} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-3">
                   <i className="fa-solid fa-arrow-left"></i>
-                  <span>{status === GameStatus.WON ? 'לשלב הבא' : 'נסה שלב חדש'}</span>
+                  <span>{levelData?.isDaily ? 'חזרה ליומן' : (status === GameStatus.WON ? 'לשלב הבא' : 'נסה שלב חדש')}</span>
                 </button>
               </div>
             )}
@@ -998,10 +1191,26 @@ const App: React.FC = () => {
             )}
           </div>
           {status === GameStatus.WON && isOverlayVisible && (
-            <GameOverlay title="כל הכבוד!" message={`סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={() => startNewGame()} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} onReportMistake={handleReportMistake} />
+            <GameOverlay title="כל הכבוד!" message={levelData?.isDaily ? `השלמת את החידון היומי!` : `סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={handleGameOverAction} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} onReportMistake={handleReportMistake} />
           )}
           {status === GameStatus.LOST && isOverlayVisible && (
-            <GameOverlay title="המשחק נגמר" message="עשית יותר מדי טעויות. נסה שוב!" type="lost" onAction={() => startNewGame()} onRetry={handleRetryLevel} onReveal={revealSolution} author={levelData?.author} showRevealButton={true} onReportMistake={handleReportMistake} />
+            <GameOverlay 
+              title="המשחק נגמר" 
+              message={
+                levelData?.isDaily 
+                  ? (isDailyRetryAllowed 
+                      ? (dailyAttemptsLeft === 1 ? "שימו לב: נותר ניסיון אחרון להיום!" : `נותרו לך עוד ${dailyAttemptsLeft} ניסיונות להיום.`)
+                      : "נגמרו הניסיונות להיום. נתראה מחר!") 
+                  : "עשית יותר מדי טעויות. נסה שוב!"
+              } 
+              type="lost" 
+              onAction={handleGameOverAction} 
+              onRetry={(!levelData?.isDaily || isDailyRetryAllowed) ? handleRetryLevel : undefined} 
+              onReveal={revealSolution} 
+              author={levelData?.author} 
+              showRevealButton={!levelData?.isDaily} 
+              onReportMistake={handleReportMistake} 
+            />
           )}
         </div>
       )}

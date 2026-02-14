@@ -36,11 +36,11 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
   const categories: AchievementCategory[] = [
     {
       id: 'streak',
-      title: 'רצף ניצחונות',
+      title: 'רצף ניצחונות (קריירה)',
       icon: 'fa-fire',
       color: 'text-orange-600',
       bg: 'bg-orange-50',
-      currentValue: stats.bestStreak,
+      currentValue: stats.careerBestStreak || 0,
       tiers: [
         { id: 'streak_3', label: 'ארד', target: 3, reward: 1 },
         { id: 'streak_7', label: 'כסף', target: 7, reward: 1 },
@@ -66,11 +66,11 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'perfect',
-      title: 'משחקים מושלמים',
+      title: 'משחקים מושלמים (קריירה)',
       icon: 'fa-bullseye',
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      currentValue: stats.perfectGames || 0,
+      currentValue: stats.careerPerfectGames || 0,
       tiers: [
         { id: 'perfect_1', label: '1', target: 1, reward: 1 },
         { id: 'perfect_5', label: '5', target: 5, reward: 1 },
@@ -81,11 +81,11 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'total_wins',
-      title: 'סך הכל ניצחונות',
+      title: 'סך הכל ניצחונות (קריירה)',
       icon: 'fa-star',
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
-      currentValue: stats.gamesWon,
+      currentValue: stats.careerWins || 0,
       tiers: [
         { id: 'total_10', label: '10', target: 10, reward: 1 },
         { id: 'total_25', label: '25', target: 25, reward: 1 },
@@ -96,11 +96,11 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'difficulty',
-      title: 'אלוף הקושי',
+      title: 'אלוף הקושי (קריירה)',
       icon: 'fa-bolt',
       color: 'text-rose-600',
       bg: 'bg-rose-50',
-      currentValue: (stats.hardWinsCount || 0) + (stats.veryHardWinsCount || 0),
+      currentValue: (stats.careerHardWins || 0) + (stats.careerVeryHardWins || 0),
       tiers: [
         { id: 'diff_5', label: '5', target: 5, reward: 1 },
         { id: 'diff_15', label: '15', target: 15, reward: 1 },
@@ -110,7 +110,7 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'collector',
-      title: 'היסטוריון',
+      title: 'היסטוריון (מכל המשחקים)',
       icon: 'fa-book-open',
       color: 'text-amber-700',
       bg: 'bg-amber-50',
@@ -161,6 +161,10 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-blue-800 text-xs font-bold text-center mb-2">
+          שימו לב: הישגי קריירה מתקדמים רק במשחקי שלבים רגילים.
+        </div>
+
         {categories.map((cat) => (
           <div key={cat.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-200">
             {/* Category Header */}
@@ -206,14 +210,12 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
                         <span className="text-sm font-black">{tier.label[0]}</span>
                       )}
 
-                      {/* Reward indicator if unclaimed */}
                       {!isClaimed && isAchieved && (
                         <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-[12px] animate-pulse border-2 border-white shadow-sm">
                           <i className="fa-solid fa-lightbulb"></i>
                         </div>
                       )}
 
-                      {/* Floating animation */}
                       {isAnimating && (
                         <div className="absolute -top-12 flex items-center justify-center pointer-events-none w-20">
                           <div className="bg-amber-500 text-white rounded-full px-3 py-1 text-[13px] font-black animate-float-hint shadow-xl flex items-center gap-1">
@@ -224,7 +226,6 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
                       )}
                     </div>
 
-                    {/* Target Label */}
                     <div className="flex flex-col items-center">
                       <span className={`text-[12px] font-black ${isAchieved ? 'text-slate-800' : 'text-slate-500'}`}>
                         {tier.target}
