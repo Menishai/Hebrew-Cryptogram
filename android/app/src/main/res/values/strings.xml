@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hebrew Cryptogram Master</string>
+    <string name="title_activity_main">Hebrew Cryptogram Master</string>
+    <string name="package_name">com.menishai.cryptogram</string>
+    <string name="custom_url_scheme">com.menishai.cryptogram</string>
+</resources>
