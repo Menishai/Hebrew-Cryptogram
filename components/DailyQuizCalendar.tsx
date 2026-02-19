@@ -9,13 +9,19 @@ interface DailyQuizCalendarProps {
 }
 
 const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress }) => {
-  const daysInFeb = 28;
-  const days = Array.from({ length: daysInFeb }, (_, i) => i + 1);
-  const hebrewDays = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
-  
+  const [selectedMonth, setSelectedMonth] = useState<number>(1); // 1 = Feb, 2 = March
   const [lockedDateSelected, setLockedDateSelected] = useState<boolean>(false);
   const [timeToNextQuiz, setTimeToNextQuiz] = useState<string>('');
 
+  const months = [
+    { name: 'פברואר', days: 28, value: 1 },
+    { name: 'מרץ', days: 31, value: 2 }
+  ];
+
+  const currentMonthData = months.find(m => m.value === selectedMonth) || months[0];
+  const days = Array.from({ length: currentMonthData.days }, (_, i) => i + 1);
+  const hebrewDays = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+  
   // Current real date logic for locking future days
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
@@ -52,7 +58,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   }, [lockedDateSelected]);
 
   const getDifficulty = (dayNum: number): Difficulty => {
-    const date = new Date(2026, 1, dayNum);
+    const date = new Date(2026, selectedMonth, dayNum);
     const dayOfWeek = date.getDay();
     if (dayOfWeek === 0) return Difficulty.EASY;
     if (dayOfWeek === 3 || dayOfWeek === 4) return Difficulty.HARD;
@@ -68,6 +74,14 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
     } else {
       onSelectDate(dateStr);
     }
+  };
+
+  const nextMonth = () => {
+    if (selectedMonth < 2) setSelectedMonth(selectedMonth + 1);
+  };
+
+  const prevMonth = () => {
+    if (selectedMonth > 1) setSelectedMonth(selectedMonth - 1);
   };
 
   return (
@@ -103,7 +117,23 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
         </button>
         <div className="text-center">
           <h2 className="text-xl md:text-2xl font-black text-slate-800">חידון יומי</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">February 2026</p>
+          <div className="flex items-center justify-center gap-4 mt-1">
+             <button 
+              onClick={prevMonth} 
+              disabled={selectedMonth === 1}
+              className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
+             >
+               <i className="fa-solid fa-chevron-right text-xs"></i>
+             </button>
+             <p className="text-[11px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
+             <button 
+              onClick={nextMonth} 
+              disabled={selectedMonth === 2}
+              className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
+             >
+               <i className="fa-solid fa-chevron-left text-xs"></i>
+             </button>
+          </div>
         </div>
         <div className="w-10 md:w-12"></div>
       </div>
@@ -155,7 +185,8 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
             ))}
             
             {days.map(d => {
-              const dateStr = `2026-02-${d.toString().padStart(2, '0')}`;
+              const monthStr = (selectedMonth + 1).toString().padStart(2, '0');
+              const dateStr = `2026-${monthStr}-${d.toString().padStart(2, '0')}`;
               const stats = dailyProgress[dateStr] || { status: 'none', attempts: 0 };
               const isFuture = dateStr > todayStr;
               const isToday = dateStr === todayStr;

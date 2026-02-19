@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Difficulty, FontSize, Statistics, QuoteCategory } from '../types';
 import { encodeSaveData, decodeSaveData } from '../utils/saveUtils';
 
@@ -27,7 +27,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onFontSizeChange,
   vibrationEnabled, 
   onVibrationToggle,
-  soundEnabled,
+  soundEnabled, 
   onSoundToggle,
   onBack,
   stats,
@@ -41,6 +41,29 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [exportedCode, setExportedCode] = useState('');
   const [importValue, setImportValue] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+  // Swipe back logic
+  const touchStartRef = useRef<number | null>(null);
+  const touchEndRef = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 100;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndRef.current = null;
+    touchStartRef.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    const distance = touchEndRef.current - touchStartRef.current;
+    const isRightSwipe = distance > SWIPE_THRESHOLD;
+    if (isRightSwipe) {
+      onBack();
+    }
+  };
 
   const difficultyOptions = [
     { id: 'AUTO', label: 'אוטומטי', desc: 'קושי משתנה לפי השלב', icon: 'fa-wand-magic-sparkles', color: 'text-indigo-600' },
@@ -111,7 +134,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center h-full p-4 md:p-6 bg-slate-50 overflow-y-auto" dir="rtl">
+    <div 
+      className="flex flex-col items-center h-full p-4 md:p-6 bg-slate-50 overflow-y-auto" 
+      dir="rtl"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Header */}
       <div className="w-full flex items-center justify-between mb-6 flex-shrink-0">
         <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-sm transition-transform active:scale-95">

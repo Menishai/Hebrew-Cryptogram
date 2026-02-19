@@ -71,12 +71,15 @@ export const generateDailyPuzzle = async (dateStr: string): Promise<GameLevel> =
   else if (dayOfWeek === 5 || dayOfWeek === 6) difficulty = Difficulty.VERY_HARD;
 
   let selectedQuote;
+  
+  // Rule: Strictly use the daily database. 
+  // If the specific date is missing, pick deterministically from the daily pool only.
   if (SPECIAL_DAILY_QUOTES[dateStr]) {
     selectedQuote = SPECIAL_DAILY_QUOTES[dateStr];
   } else {
-    const pool = QUOTES_DB.filter(q => q.difficulty === difficulty);
-    const index = Math.floor(sr.next() * pool.length);
-    selectedQuote = pool[index];
+    const dailyPool = Object.values(SPECIAL_DAILY_QUOTES);
+    const index = Math.floor(sr.next() * dailyPool.length);
+    selectedQuote = dailyPool[index];
   }
 
   const level = buildLevelFromQuote(selectedQuote.quote, selectedQuote.author, (selectedQuote as any).year, difficulty, 10, sr);

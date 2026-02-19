@@ -8,6 +8,7 @@ interface HeaderProps {
   hintsRemaining: number;
   onUseHint: () => void;
   isHintModeActive?: boolean;
+  isIdle?: boolean;
   onUndo: () => void;
   canUndo: boolean;
   onRestart: () => void;
@@ -27,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({
   hintsRemaining,
   onUseHint,
   isHintModeActive = false,
+  isIdle = false,
   onUndo,
   canUndo,
   onRestart,
@@ -138,11 +140,11 @@ const Header: React.FC<HeaderProps> = ({
                 ? 'bg-amber-500 border-amber-600 text-white shadow-inner scale-95 ring-2 ring-amber-300'
                 : 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100 shadow-sm active:scale-95' 
               : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed opacity-50'
-          }`}
+          } ${isIdle && hintsRemaining > 0 && !isHintModeActive ? 'animate-pulse scale-110 shadow-lg shadow-amber-200 border-amber-400' : ''}`}
           title={hintsRemaining > 0 ? "תפריט רמזים" : "לא נותרו רמזים"}
         >
-          <i className={`fa-solid fa-lightbulb text-sm md:text-base ${hintsRemaining > 0 && !isHintModeActive ? 'animate-pulse' : ''}`}></i>
-          <span className="font-black text-xs md:text-sm">{hintsRemaining}</span>
+          <i className={`fa-solid fa-lightbulb text-sm md:text-base ${hintsRemaining > 0 && !isHintModeActive ? 'animate-pulse' : ''} ${isIdle && hintsRemaining > 0 ? 'text-amber-500' : ''}`}></i>
+          <span className={`font-black text-xs md:text-sm ${isIdle && hintsRemaining > 0 && !isHintModeActive ? 'text-amber-700' : ''}`}>{hintsRemaining}</span>
         </button>
       </div>
     </header>

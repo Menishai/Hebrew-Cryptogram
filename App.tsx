@@ -23,7 +23,7 @@ const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
   [Difficulty.MEDIUM]: { numRevealed: 0, maxMistakes: 5, hints: 2 },
   [Difficulty.HARD]: { numRevealed: 0, maxMistakes: 3, hints: 1 },
-  [Difficulty.VERY_HARD]: { numRevealed: 0, maxMistakes: 2, hints: 1 },
+  [Difficulty.VERY_HARD]: { numRevealed: 0, maxMistakes: 3, hints: 1 },
 };
 
 const STORAGE_KEYS = {
@@ -39,6 +39,7 @@ const STORAGE_KEYS = {
 
 const MAX_USED_QUOTES_HISTORY = 1000;
 const CELEBRATION_DURATION = 2000;
+const IDLE_HINT_THRESHOLD = 12000; // 12 seconds
 
 const checkIfCellIsLocked = (
   idx: number,
@@ -110,12 +111,15 @@ const App: React.FC = () => {
   const [showShop, setShowShop] = useState(false);
   const [isBoardShaking, setIsBoardShaking] = useState(false);
   const [isHintMode, setIsHintMode] = useState(false);
+  const [isLockedHintMode, setIsLockedHintMode] = useState(false);
   const [showHintMenu, setShowHintMenu] = useState(false);
   const [isUndoConfirmVisible, setIsUndoConfirmVisible] = useState(false);
   const [currentLevelDifficulty, setCurrentLevelDifficulty] = useState<Difficulty>(Difficulty.EASY);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
   const [reportToast, setReportToast] = useState(false);
   const [packExhaustedToast, setPackExhaustedToast] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
+  const idleTimerRef = useRef<number | null>(null);
   
   const [history, setHistory] = useState<UserState[]>([]);
   const [preFetchedLevel, setPreFetchedLevel] = useState<{level: GameLevel, difficulty: Difficulty} | null>(null);
@@ -128,6 +132,24 @@ const App: React.FC = () => {
       mainScrollRef.current.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }
   }, [currentScreen, levelData]);
+
+  // Inactivity logic
+  const resetIdleTimer = useCallback(() => {
+    setIsIdle(false);
+    if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    if (status === GameStatus.PLAYING && currentScreen === Screen.PLAYING) {
+      idleTimerRef.current = window.setTimeout(() => {
+        setIsIdle(true);
+      }, IDLE_HINT_THRESHOLD);
+    }
+  }, [status, currentScreen]);
+
+  useEffect(() => {
+    resetIdleTimer();
+    return () => {
+      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    };
+  }, [resetIdleTimer]);
 
   const [difficultySetting, setDifficultySetting] = useState<Difficulty | 'AUTO'>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.DIFFICULTY);
@@ -339,7 +361,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleReportMistake = useCallback(() => {
-    const email = "cryptoheb@gmail.com";
+    const email = "meniapps.help@gmail.com";
     const subject = encodeURIComponent("דיווח על טעות באלוף הצופן");
     let body = "שלום צוות אלוף הצופן,\n\nמצאתי טעות בציטוט הבא:\n\n";
     
@@ -352,7 +374,7 @@ const App: React.FC = () => {
     
     body += "\nפירוט הטעות:\n";
     
-    window.location.href = `mailto:cryptoheb@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:meniapps.help@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
     setReportToast(true);
     setTimeout(() => setReportToast(false), 3000);
   }, [levelData, currentLevelDifficulty, stats.currentLevel]);
@@ -548,25 +570,17 @@ const App: React.FC = () => {
     });
     
     setIsHintMode(false);
+    setIsLockedHintMode(false);
     playSound('undo');
-  }, [history, status, userState.hintsRemaining, playSound]);
+    resetIdleTimer();
+  }, [history, status, userState.hintsRemaining, playSound, resetIdleTimer]);
 
   const handleRevealLockedOption = useCallback(() => {
     setShowHintMenu(false);
     if (!levelData || status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
-    
-    const lockedIndices: number[] = [];
-    for (let i = 0; i < levelData.quote.length; i++) {
-      if (isHebrewLetter(levelData.quote[i]) && checkIfCellIsLocked(i, levelData, stats.currentLevel, status, userState.cellGuesses, userState.hintRevealedIndices)) {
-        lockedIndices.push(i);
-      }
-    }
-
-    if (lockedIndices.length === 0) return;
-    
-    const randomIdx = lockedIndices[Math.floor(Math.random() * lockedIndices.length)];
-    applyHintToIndex(randomIdx, true); 
-  }, [levelData, status, userState.hintsRemaining, stats.currentLevel, userState.cellGuesses, userState.hintRevealedIndices]);
+    setIsLockedHintMode(true);
+    setIsHintMode(false);
+  }, [levelData, status, userState.hintsRemaining]);
 
   const getRandomDifficulty = useCallback((level: number) => {
     if (level <= 4) {
@@ -621,6 +635,7 @@ const App: React.FC = () => {
     setCurrentLevelDifficulty(diff);
     setHistory([]);
     setIsHintMode(false);
+    setIsLockedHintMode(false);
     setShowHintMenu(false);
     setIsUndoConfirmVisible(false);
     setRewardMessage(null);
@@ -658,7 +673,8 @@ const App: React.FC = () => {
       setPackExhaustedToast(true);
       setTimeout(() => setPackExhaustedToast(false), 6000);
     }
-  }, [stats.currentLevel, stats.hintsRemaining]);
+    resetIdleTimer();
+  }, [stats.currentLevel, stats.hintsRemaining, resetIdleTimer]);
 
   const startNewGame = useCallback(async (forcedDifficulty?: Difficulty) => {
     setCurrentScreen(Screen.PLAYING);
@@ -687,7 +703,6 @@ const App: React.FC = () => {
   }, [difficultySetting, stats.currentLevel, stats.usedQuotes, preFetchedLevel, initLevelState, getRandomDifficulty, activeCategories]);
 
   const startDailyGame = useCallback(async (dateStr: string) => {
-    // Basic verification: Check if this day is already exhausted before starting
     const dayStats = stats.dailyProgress?.[dateStr];
     if (dayStats && dayStats.attempts >= 3 && dayStats.status !== 'won') {
       setCurrentScreen(Screen.DAILY_QUIZ);
@@ -727,16 +742,18 @@ const App: React.FC = () => {
 
   const handleHintClick = useCallback(() => {
     if (status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
-    if (isHintMode) {
+    if (isHintMode || isLockedHintMode) {
       setIsHintMode(false);
+      setIsLockedHintMode(false);
     } else {
       setShowHintMenu(true);
     }
-  }, [status, userState.hintsRemaining, isHintMode]);
+  }, [status, userState.hintsRemaining, isHintMode, isLockedHintMode]);
 
   const handleRevealLetterOption = useCallback(() => {
     setShowHintMenu(false);
     setIsHintMode(true);
+    setIsLockedHintMode(false);
   }, []);
 
   const handleRevealAuthorOption = useCallback(() => {
@@ -755,7 +772,8 @@ const App: React.FC = () => {
       isAuthorRevealed: true,
       hintsRemaining: newHints
     }));
-  }, [userState.isAuthorRevealed, userState.hintsRemaining, playSound]);
+    resetIdleTimer();
+  }, [userState.isAuthorRevealed, userState.hintsRemaining, playSound, resetIdleTimer]);
 
   const applyHintToIndex = useCallback((idx: number, isFromLockedMenu = false) => {
     if (!levelData || status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
@@ -767,7 +785,16 @@ const App: React.FC = () => {
       return; 
     }
 
-    if (!isFromLockedMenu && isCellLocked(idx)) {
+    const cellLocked = isCellLocked(idx);
+
+    if (isLockedHintMode) {
+       if (!cellLocked) {
+          setIsBoardShaking(true);
+          setTimeout(() => setIsBoardShaking(false), 400);
+          return;
+       }
+       // If it is locked and we are in locked hint mode, proceed to reveal
+    } else if (cellLocked) {
       playSound('locked');
       setIsBoardShaking(true);
       setTimeout(() => setIsBoardShaking(false), 400);
@@ -778,6 +805,7 @@ const App: React.FC = () => {
     const currentGuess = userState.cellGuesses[idx];
     if (currentGuess && normalizeHebrewChar(currentGuess) === normalizeHebrewChar(charAtSelection)) { 
       setIsHintMode(false); 
+      setIsLockedHintMode(false);
       return; 
     }
     
@@ -815,6 +843,7 @@ const App: React.FC = () => {
     });
     
     setIsHintMode(false);
+    setIsLockedHintMode(false);
     setTimeout(() => {
       setUserState(prev => {
         const updatedFeedback = { ...prev.cellFeedback };
@@ -822,7 +851,8 @@ const App: React.FC = () => {
         return { ...prev, cellFeedback: updatedFeedback };
       });
     }, 1000);
-  }, [levelData, status, userState.hintsRemaining, userState.cellGuesses, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked]);
+    resetIdleTimer();
+  }, [levelData, status, userState.hintsRemaining, userState.cellGuesses, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked, isLockedHintMode, resetIdleTimer]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
@@ -850,12 +880,14 @@ const App: React.FC = () => {
         setStatus(GameStatus.PLAYING);
         setIsOverlayVisible(true);
         setIsHintMode(false);
+        setIsLockedHintMode(false);
         setShowHintMenu(false);
         setIsUndoConfirmVisible(false);
         setRewardMessage(null);
+        resetIdleTimer();
       } catch (e) { localStorage.removeItem(STORAGE_KEYS.GAME_STATE); }
     }
-  }, [stats.hintsRemaining]);
+  }, [stats.hintsRemaining, resetIdleTimer]);
 
   const revealSolution = useCallback(() => {
     if (!levelData) return;
@@ -870,6 +902,7 @@ const App: React.FC = () => {
     });
     setIsOverlayVisible(false);
     setIsHintMode(false);
+    setIsLockedHintMode(false);
   }, [levelData]);
 
   const charIdxToWordIdx = useMemo(() => {
@@ -919,7 +952,7 @@ const App: React.FC = () => {
   }, [levelData, userState.cellGuesses]);
 
   const handleKeyPress = (letter: string) => {
-    if (status !== GameStatus.PLAYING || userState.selectedCellIndex === null || !levelData || isHintMode) return;
+    if (status !== GameStatus.PLAYING || userState.selectedCellIndex === null || !levelData || isHintMode || isLockedHintMode) return;
     const idx = userState.selectedCellIndex;
     if (isCellLocked(idx)) { playSound('locked'); setIsBoardShaking(true); setTimeout(() => setIsBoardShaking(false), 400); return; }
     
@@ -995,6 +1028,7 @@ const App: React.FC = () => {
           return { ...prev, cellFeedback: updatedFeedback };
         });
       }, 1000);
+      resetIdleTimer();
     } else {
       playSound('wrong');
       if (vibrationEnabled && navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -1019,9 +1053,12 @@ const App: React.FC = () => {
 
   const handleCellClick = (idx: number) => {
     if (status !== GameStatus.PLAYING) return;
-    if (isCellLocked(idx)) { playSound('locked'); setIsBoardShaking(true); setTimeout(() => setIsBoardShaking(false), 400); return; }
     if (isHintMode) applyHintToIndex(idx);
-    else setUserState(prev => ({ ...prev, selectedCellIndex: idx }));
+    else if (isLockedHintMode) applyHintToIndex(idx);
+    else {
+      if (isCellLocked(idx)) { playSound('locked'); setIsBoardShaking(true); setTimeout(() => setIsBoardShaking(false), 400); return; }
+      setUserState(prev => ({ ...prev, selectedCellIndex: idx }));
+    }
   };
 
   const handleActiveCategoriesChange = (cats: QuoteCategory[]) => {
@@ -1152,7 +1189,7 @@ const App: React.FC = () => {
         <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
       ) : (
         <div className="flex flex-col h-full overflow-hidden">
-          <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
+          <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode || isLockedHintMode} isIdle={isIdle} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
           <main 
             ref={mainScrollRef}
             style={{ fontSize: '16.5px' }}
@@ -1164,7 +1201,7 @@ const App: React.FC = () => {
                 <p className="text-gray-500 font-medium text-center">מכין את הפאזל הבא...</p>
               </div>
             ) : (
-              <Board level={levelData!} userState={userState} fontSize={fontSize} isHintMode={isHintMode} onSelect={handleCellClick} completedLetters={completedLetters} celebratingWordIdx={celebratingWordIdx} isCellLocked={isCellLocked} />
+              <Board level={levelData!} userState={userState} fontSize={fontSize} isHintMode={isHintMode} isLockedHintMode={isLockedHintMode} onSelect={handleCellClick} completedLetters={completedLetters} celebratingWordIdx={celebratingWordIdx} isCellLocked={isCellLocked} />
             )}
             {!isOverlayVisible && (status === GameStatus.WON || status === GameStatus.LOST) && (
               <div className="mt-8 flex flex-col items-center gap-4 animate-in slide-in-from-bottom duration-500 pb-8">
@@ -1177,7 +1214,7 @@ const App: React.FC = () => {
             )}
           </main>
           <div className="pb-1 md:pb-2 px-2 flex-shrink-0 flex flex-col items-center gap-1 md:gap-2">
-            <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
+            <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode || isLockedHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
             {status === GameStatus.PLAYING && (
               <div className="opacity-30 hover:opacity-100 transition-opacity">
                 <button 

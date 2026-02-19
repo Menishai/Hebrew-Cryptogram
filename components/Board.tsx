@@ -9,6 +9,7 @@ interface BoardProps {
   userState: UserState;
   fontSize: FontSize;
   isHintMode?: boolean;
+  isLockedHintMode?: boolean;
   onSelect: (idx: number) => void;
   completedLetters: Set<string>;
   celebratingWordIdx: number | null;
@@ -20,6 +21,7 @@ const Board: React.FC<BoardProps> = ({
   userState, 
   fontSize,
   isHintMode = false,
+  isLockedHintMode = false,
   onSelect, 
   completedLetters, 
   celebratingWordIdx,
@@ -59,18 +61,23 @@ const Board: React.FC<BoardProps> = ({
   const sizes = getFontSizeClasses();
 
   return (
-    <div className={`flex flex-wrap justify-center content-start gap-x-6 gap-y-6 md:gap-x-12 md:gap-y-12 py-4 md:py-8 w-full max-w-full transition-all duration-300 ${isHintMode ? 'opacity-90' : ''}`} dir="rtl">
-      {isHintMode && (
+    <div className={`flex flex-wrap justify-center content-start gap-x-4 gap-y-6 md:gap-x-12 md:gap-y-12 py-4 md:py-8 w-full max-w-full transition-all duration-300 ${(isHintMode || isLockedHintMode) ? 'opacity-90' : ''}`} dir="rtl">
+      {(isHintMode || isLockedHintMode) && (
         <div className="w-full text-center mb-4 animate-bounce relative z-20">
           <span className="bg-amber-100 text-amber-800 px-6 py-3 rounded-full font-black text-sm border-2 border-amber-300 shadow-lg inline-flex items-center gap-2">
-            <i className="fa-solid fa-hand-pointer text-amber-600"></i>
-            בחר משבצת לחשיפה
+            <i className={`fa-solid ${isLockedHintMode ? 'fa-lock-open' : 'fa-hand-pointer'} text-amber-600`}></i>
+            {isLockedHintMode ? 'בחר אות נעולה לחשיפה' : 'בחר משבצת לחשיפה'}
           </span>
         </div>
       )}
       
       {words.map((word, wordIdx) => {
         const isWordCelebrating = celebratingWordIdx === wordIdx;
+        const wordLength = word.length;
+        
+        // Dynamic scaling logic for mobile: 
+        // If word is longer than 6 characters, we apply a class that allows it to shrink
+        const isLongWord = wordLength > 6;
         
         const wordElements = word.split('').map((char, charInWordIdx) => {
           const currentIdx = globalCharIdx + charInWordIdx;
@@ -86,6 +93,7 @@ const Board: React.FC<BoardProps> = ({
           }
 
           const baseChar = normalizeHebrewChar(char);
+          const cellLocked = isCellLocked(currentIdx);
           
           return (
             <BoardCell 
@@ -96,24 +104,36 @@ const Board: React.FC<BoardProps> = ({
               isSelected={userState.selectedCellIndex === currentIdx}
               isPreFilled={level.revealedIndices.includes(currentIdx)}
               feedback={userState.cellFeedback[currentIdx]}
-              isLocked={isCellLocked(currentIdx)}
+              isLocked={cellLocked}
               isSameNumAsSelected={selectedNum !== null && num === selectedNum}
               isCompleted={completedLetters.has(baseChar)}
               isHintMode={isHintMode}
+              isLockedHintMode={isLockedHintMode}
               shouldDance={isWordCelebrating}
               onSelect={() => onSelect(currentIdx)}
               sizes={sizes}
               animationDelay={isWordCelebrating ? `${charInWordIdx * 0.05}s` : '0s'}
+              isFlexible={isLongWord}
             />
           );
         });
 
         const wordGroup = (
-          <div key={wordIdx} className="flex flex-wrap gap-1.5 md:gap-3 justify-center">
+          <div 
+            key={wordIdx} 
+            className={`flex flex-nowrap gap-1 md:gap-3 justify-center max-w-full ${isLongWord ? 'shrink-0' : ''}`}
+          >
             {wordElements}
           </div>
         );
         
+        const wordWithIndexUpdate = (
+          <React.Fragment key={wordIdx}>
+            {wordGroup}
+            {/* Logic to update globalCharIdx happens outside the render map to stay clean */}
+          </React.Fragment>
+        );
+
         globalCharIdx += word.length + 1;
         return wordGroup;
       })}
