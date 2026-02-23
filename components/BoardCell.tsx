@@ -54,13 +54,13 @@ const BoardCell: React.FC<BoardCellProps> = ({
     textColorClass = 'text-slate-800';
   }
 
-  // Handle Dimension Classes with responsiveness for long words
+  // Handle Dimension Classes
   const baseDimensionClass = sizes.cell.split(' ').filter(c => c.startsWith('h-') || c.startsWith('w-') || c.startsWith('md:')).join(' ');
   
-  // Custom sizing for flexible cells on mobile
+  // Adjusted flexible sizing: higher minimums to prevent "too small" cells
   const flexStyle = isFlexible ? {
-    width: 'clamp(24px, 8vw, 64px)',
-    height: 'clamp(32px, 11vw, 84px)',
+    width: 'clamp(34px, 9vw, 64px)',
+    height: 'clamp(44px, 12vw, 84px)',
     minWidth: '0'
   } : {};
 
@@ -102,7 +102,7 @@ const BoardCell: React.FC<BoardCellProps> = ({
         )}
         <span className={`${sizes.letter} font-black transition-all ${textColorClass} ${
           feedback === 'pop-active' ? 'animate-pop' : ''
-        } drop-shadow-sm ${isFlexible ? 'text-[clamp(16px,5vw,40px)]' : ''}`}>
+        } drop-shadow-sm ${isFlexible ? 'text-[clamp(18px,6vw,40px)]' : ''}`}>
           {userLetter || ''}
         </span>
       </div>
@@ -124,7 +124,7 @@ const BoardCell: React.FC<BoardCellProps> = ({
       <span className={`text-[11px] md:text-[13px] mt-0.5 md:mt-1.5 font-black h-4 md:h-5 transition-all duration-300 ${
         (isSelected && !isHintMode && !isLockedHintMode) ? 'text-blue-900 scale-125 font-black' : 
         (isSameNumAsSelected ? 'text-blue-600 font-extrabold scale-110' : 'text-slate-500')
-      } ${(isCompleted || isLocked) && !isLockedHintMode ? 'opacity-0 scale-50' : 'opacity-100 scale-100'} ${isLockedHintMode && isLocked ? 'text-amber-800 font-black scale-110' : ''} ${isFlexible ? 'text-[clamp(8px,2.5vw,13px)]' : ''}`}>
+      } ${(isCompleted || isLocked) && !isLockedHintMode ? 'opacity-0 scale-50' : 'opacity-100 scale-100'} ${isLockedHintMode && isLocked ? 'text-amber-800 font-black scale-110' : ''} ${isFlexible ? 'text-[clamp(9px,3vw,13px)]' : ''}`}>
         {num}
       </span>
     </div>

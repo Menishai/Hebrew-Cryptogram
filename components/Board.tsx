@@ -28,6 +28,13 @@ const Board: React.FC<BoardProps> = ({
   isCellLocked
 }) => {
   const words = level.quote.split(' ');
+  
+  // GLOBAL SCALING LOGIC:
+  // If a word is extremely long (>9 chars), we might need a SLIGHT uniform shrink.
+  // Otherwise, we keep standard sizes and use row-breaking.
+  const maxWordLength = Math.max(...words.map(w => w.length));
+  const shouldShrinkSlightly = maxWordLength > 9;
+
   let globalCharIdx = 0;
 
   const selectedNum = userState.selectedCellIndex !== null && isHebrewLetter(level.quote[userState.selectedCellIndex])
@@ -61,7 +68,7 @@ const Board: React.FC<BoardProps> = ({
   const sizes = getFontSizeClasses();
 
   return (
-    <div className={`flex flex-wrap justify-center content-start gap-x-4 gap-y-6 md:gap-x-12 md:gap-y-12 py-4 md:py-8 w-full max-w-full transition-all duration-300 ${(isHintMode || isLockedHintMode) ? 'opacity-90' : ''}`} dir="rtl">
+    <div className={`flex flex-wrap justify-center content-start gap-x-6 gap-y-8 md:gap-x-16 md:gap-y-16 py-4 md:py-8 w-full max-w-full transition-all duration-300 ${(isHintMode || isLockedHintMode) ? 'opacity-90' : ''}`} dir="rtl">
       {(isHintMode || isLockedHintMode) && (
         <div className="w-full text-center mb-4 animate-bounce relative z-20">
           <span className="bg-amber-100 text-amber-800 px-6 py-3 rounded-full font-black text-sm border-2 border-amber-300 shadow-lg inline-flex items-center gap-2">
@@ -75,9 +82,8 @@ const Board: React.FC<BoardProps> = ({
         const isWordCelebrating = celebratingWordIdx === wordIdx;
         const wordLength = word.length;
         
-        // Dynamic scaling logic for mobile: 
-        // If word is longer than 6 characters, we apply a class that allows it to shrink
-        const isLongWord = wordLength > 6;
+        // Long words (>5 chars) get their own line to maximize space for squares
+        const isLongWord = wordLength > 5;
         
         const wordElements = word.split('').map((char, charInWordIdx) => {
           const currentIdx = globalCharIdx + charInWordIdx;
@@ -113,7 +119,7 @@ const Board: React.FC<BoardProps> = ({
               onSelect={() => onSelect(currentIdx)}
               sizes={sizes}
               animationDelay={isWordCelebrating ? `${charInWordIdx * 0.05}s` : '0s'}
-              isFlexible={isLongWord}
+              isFlexible={shouldShrinkSlightly}
             />
           );
         });
@@ -121,17 +127,10 @@ const Board: React.FC<BoardProps> = ({
         const wordGroup = (
           <div 
             key={wordIdx} 
-            className={`flex flex-nowrap gap-1 md:gap-3 justify-center max-w-full ${isLongWord ? 'shrink-0' : ''}`}
+            className={`flex flex-nowrap gap-1 md:gap-3 justify-center ${isLongWord ? 'w-full my-2' : ''}`}
           >
             {wordElements}
           </div>
-        );
-        
-        const wordWithIndexUpdate = (
-          <React.Fragment key={wordIdx}>
-            {wordGroup}
-            {/* Logic to update globalCharIdx happens outside the render map to stay clean */}
-          </React.Fragment>
         );
 
         globalCharIdx += word.length + 1;

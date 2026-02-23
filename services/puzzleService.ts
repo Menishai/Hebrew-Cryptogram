@@ -1,7 +1,7 @@
 
 import { GameLevel, Difficulty, QuoteCategory } from "../types";
 import { QUOTES_DB } from "../data/quotes";
-import { SPECIAL_DAILY_QUOTES } from "../data/dailyQuotes";
+import { SPECIAL_DAILY_QUOTES } from "../data/dailyQuotes';
 import { FINAL_TO_BASE, isHebrewLetter } from "../utils/textUtils";
 
 /**
