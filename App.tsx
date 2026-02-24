@@ -49,8 +49,17 @@ const checkIfCellIsLocked = (
   guesses: Record<number, string>,
   hintRevealedIndices: number[] = []
 ): boolean => {
-  if (!levelData?.isLockChallenge || status !== GameStatus.PLAYING) return false;
-  if (currentLevel < 3 && !levelData.isDaily) return false; 
+  if (!levelData || status !== GameStatus.PLAYING) return false;
+  
+  // New logic: Check if index is in the pre-calculated lockedIndices array
+  if (!levelData.lockedIndices || !levelData.lockedIndices.includes(idx)) {
+    // Fallback for old saves or if lockedIndices is missing (though it shouldn't be with new logic)
+    if (levelData.isLockChallenge && !levelData.lockedIndices) {
+       // ... keep old procedural logic if absolutely necessary, but better to just return false to avoid mixing logic
+       return false; 
+    }
+    return false;
+  }
 
   const isLetter = (i: number) => i >= 0 && i < levelData.quote.length && isHebrewLetter(levelData.quote[i]);
   
@@ -65,21 +74,10 @@ const checkIfCellIsLocked = (
     return !!(guesses[i] && normalizeHebrewChar(guesses[i]) === normalizeHebrewChar(levelData.quote[i]));
   };
   
+  // If the cell itself is already solved, it's not locked
   if (isSolvedAtAll(idx)) return false;
   
-  const isFirstLetterOfWord = idx === 0 || levelData.quote[idx - 1] === ' ';
-  if (isFirstLetterOfWord) return false;
-
-  let lockSpacing = 2;
-  if (!levelData.isDaily) {
-    if (currentLevel >= 3 && currentLevel < 5) lockSpacing = 5;
-    else if (currentLevel >= 5 && currentLevel < 10) lockSpacing = 3;
-  } else {
-    lockSpacing = 3;
-  }
-  
-  if (idx % lockSpacing !== 0) return false;
-
+  // Find neighbors
   const findAdjacentLetter = (start: number, direction: number) => {
     let current = start + direction;
     while (current >= 0 && current < levelData.quote.length) {
@@ -94,9 +92,9 @@ const checkIfCellIsLocked = (
   const neighbors = [prevL, nextL].filter(n => n !== -1);
 
   if (neighbors.length === 0) return false;
+  
+  // Unlock if ANY neighbor is solved normally (by user, not hint)
   if (neighbors.some(n => isSolvedNormally(n))) return false;
-  if (neighbors.length === 1 && isSolvedAtAll(neighbors[0])) return false;
-  if (neighbors.every(n => isSolvedAtAll(n))) return false;
 
   return true;
 };
@@ -583,20 +581,25 @@ const App: React.FC = () => {
   }, [levelData, status, userState.hintsRemaining]);
 
   const getRandomDifficulty = useCallback((level: number) => {
-    if (level <= 4) {
-      const options = [Difficulty.EASY, Difficulty.MEDIUM];
-      return options[Math.floor(Math.random() * options.length)];
-    } else {
-      const options = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD, Difficulty.VERY_HARD];
-      return options[Math.floor(Math.random() * options.length)];
-    }
+    if (level <= 2) return Difficulty.EASY;
+    if (level === 3) return Difficulty.MEDIUM;
+    if (level === 4) return Difficulty.HARD;
+
+    const options = [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD, Difficulty.VERY_HARD];
+    return options[Math.floor(Math.random() * options.length)];
   }, []);
 
   const preFetchNextLevel = useCallback(async (usedQuotes: any[], levelNum: number) => {
     if (isPreFetchingRef.current) return;
     isPreFetchingRef.current = true;
     try {
-      const nextDifficulty = difficultySetting === 'AUTO' ? getRandomDifficulty(levelNum + 1) : difficultySetting;
+      let nextDifficulty = difficultySetting === 'AUTO' ? getRandomDifficulty(levelNum + 1) : difficultySetting;
+      
+      const nextLevelNum = levelNum + 1;
+      if (nextLevelNum <= 2) nextDifficulty = Difficulty.EASY;
+      else if (nextLevelNum === 3) nextDifficulty = Difficulty.MEDIUM;
+      else if (nextLevelNum === 4) nextDifficulty = Difficulty.HARD;
+
       const config = DIFFICULTY_CONFIG[nextDifficulty];
       const excludedTexts = usedQuotes.map(q => q.text);
       const level = await generateCryptogramPuzzle(config.numRevealed, excludedTexts, nextDifficulty, levelNum + 1, activeCategories);
@@ -652,7 +655,7 @@ const App: React.FC = () => {
     const initialUserState: UserState = {
       score: 0,
       mistakes: 0,
-      maxMistakes: config.maxMistakes,
+      maxMistakes: newLevel.maxMistakes || config.maxMistakes,
       hintsRemaining: stats.hintsRemaining, 
       cellGuesses: initialGuesses,
       selectedCellIndex: firstEmptyIdx === -1 ? null : firstEmptyIdx,
@@ -691,7 +694,12 @@ const App: React.FC = () => {
     
     setStatus(GameStatus.LOADING);
     try {
-      const targetDiff = forcedDifficulty || (difficultySetting === 'AUTO' ? getRandomDifficulty(stats.currentLevel) : difficultySetting);
+      let targetDiff = forcedDifficulty || (difficultySetting === 'AUTO' ? getRandomDifficulty(stats.currentLevel) : difficultySetting);
+      
+      if (stats.currentLevel <= 2) targetDiff = Difficulty.EASY;
+      else if (stats.currentLevel === 3) targetDiff = Difficulty.MEDIUM;
+      else if (stats.currentLevel === 4) targetDiff = Difficulty.HARD;
+
       const config = DIFFICULTY_CONFIG[targetDiff];
       const excludedTexts = stats.usedQuotes.map(q => q.text);
       const newLevel = await generateCryptogramPuzzle(config.numRevealed, excludedTexts, targetDiff, stats.currentLevel, activeCategories);
@@ -819,28 +827,26 @@ const App: React.FC = () => {
       return n;
     });
     
-    setUserState(prev => {
-      const newGuesses = { ...prev.cellGuesses, [idx]: levelData.quote[idx] };
-      const newFeedback = { ...prev.cellFeedback, [idx]: 'pop-active' as const };
-      
-      const newHintRevealed = [...prev.hintRevealedIndices, idx];
-      
-      const isWin = levelData.quote.split('').every((char, i) => {
-        const isLetter = isHebrewLetter(char);
-        if (!isLetter) return true;
-        const g = newGuesses[i];
-        return g && normalizeHebrewChar(g) === normalizeHebrewChar(char);
-      });
-      
-      if (isWin) {
-        setTimeout(() => {
-          setStatus(GameStatus.WON);
-          updateStats(true, levelData, currentLevelDifficulty, prev.mistakes);
-          playSound('win');
-        }, 600);
-      }
-      return { ...prev, hintsRemaining: newHints, cellGuesses: newGuesses, cellFeedback: newFeedback, hintRevealedIndices: newHintRevealed };
+    const newGuesses = { ...userState.cellGuesses, [idx]: levelData.quote[idx] };
+    const newFeedback = { ...userState.cellFeedback, [idx]: 'pop-active' as const };
+    const newHintRevealed = [...userState.hintRevealedIndices, idx];
+    
+    const isWin = levelData.quote.split('').every((char, i) => {
+      const isLetter = isHebrewLetter(char);
+      if (!isLetter) return true;
+      const g = newGuesses[i];
+      return g && normalizeHebrewChar(g) === normalizeHebrewChar(char);
     });
+    
+    if (isWin) {
+      setTimeout(() => {
+        setStatus(GameStatus.WON);
+        updateStats(true, levelData, currentLevelDifficulty, userState.mistakes);
+        playSound('win');
+      }, 300);
+    }
+    
+    setUserState(prev => ({ ...prev, hintsRemaining: newHints, cellGuesses: newGuesses, cellFeedback: newFeedback, hintRevealedIndices: newHintRevealed }));
     
     setIsHintMode(false);
     setIsLockedHintMode(false);
@@ -852,7 +858,7 @@ const App: React.FC = () => {
       });
     }, 1000);
     resetIdleTimer();
-  }, [levelData, status, userState.hintsRemaining, userState.cellGuesses, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked, isLockedHintMode, resetIdleTimer]);
+  }, [levelData, status, userState, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked, isLockedHintMode, resetIdleTimer]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
@@ -962,72 +968,75 @@ const App: React.FC = () => {
     
     if (normalizeHebrewChar(correctChar) === normalizeHebrewChar(letter)) {
       setHistory(prev => [...prev, userState]);
-      setUserState(prev => {
-        const newGuesses = { ...prev.cellGuesses, [idx]: levelData.quote[idx] };
-        const newFeedback = { ...prev.cellFeedback, [idx]: 'pop-active' as const };
-        
-        const wordIdx = charIdxToWordIdx[idx];
-        let isWordJustCompleted = false;
-        if (wordIdx !== undefined) {
-          const words = levelData.quote.split(' ');
-          let startIdx = 0;
-          for(let i=0; i<wordIdx; i++) startIdx += words[i].length + 1;
-          const wordIndices = Array.from({length: words[wordIdx].length}, (_, i) => startIdx + i);
-          isWordJustCompleted = wordIndices.every(i => {
-            const charAtPos = levelData.quote[i];
-            if (!isHebrewLetter(charAtPos)) return true;
-            const g = newGuesses[i];
-            return g && normalizeHebrewChar(g) === normalizeHebrewChar(charAtPos);
-          });
-        }
-        
-        if (isWordJustCompleted) { 
-          setCelebratingWordIdx(wordIdx); 
-          playSound('letter-complete'); 
-          setTimeout(() => setCelebratingWordIdx(null), CELEBRATION_DURATION); 
-        } else {
-          playSound('correct');
-        }
-
-        const isWin = levelData.quote.split('').every((char, i) => {
-          const isLetter = isHebrewLetter(char);
-          if (!isLetter) return true;
+      
+      const newGuesses = { ...userState.cellGuesses, [idx]: levelData.quote[idx] };
+      const newFeedback = { ...userState.cellFeedback, [idx]: 'pop-active' as const };
+      
+      const wordIdx = charIdxToWordIdx[idx];
+      let isWordJustCompleted = false;
+      if (wordIdx !== undefined) {
+        const words = levelData.quote.split(' ');
+        let startIdx = 0;
+        for(let i=0; i<wordIdx; i++) startIdx += words[i].length + 1;
+        const wordIndices = Array.from({length: words[wordIdx].length}, (_, i) => startIdx + i);
+        isWordJustCompleted = wordIndices.every(i => {
+          const charAtPos = levelData.quote[i];
+          if (!isHebrewLetter(charAtPos)) return true;
           const g = newGuesses[i];
-          return g && normalizeHebrewChar(g) === normalizeHebrewChar(char);
+          return g && normalizeHebrewChar(g) === normalizeHebrewChar(charAtPos);
         });
+      }
+      
+      if (isWordJustCompleted) { 
+        setCelebratingWordIdx(wordIdx); 
+        playSound('letter-complete'); 
+        setTimeout(() => setCelebratingWordIdx(null), CELEBRATION_DURATION); 
+      } else {
+        playSound('correct');
+      }
 
-        if (isWin) { 
+      const isWin = levelData.quote.split('').every((char, i) => {
+        const isLetter = isHebrewLetter(char);
+        if (!isLetter) return true;
+        const g = newGuesses[i];
+        return g && normalizeHebrewChar(g) === normalizeHebrewChar(char);
+      });
+
+      if (isWin) { 
+        setTimeout(() => {
           setStatus(GameStatus.WON); 
-          updateStats(true, levelData, currentLevelDifficulty, prev.mistakes); 
+          updateStats(true, levelData, currentLevelDifficulty, userState.mistakes); 
           playSound('win'); 
-        }
-
+        }, 300);
+        
+        setUserState(prev => ({ ...prev, cellGuesses: newGuesses, cellFeedback: newFeedback, selectedCellIndex: null }));
+      } else {
         let nextIdx: number | null = null;
         for (let i = idx + 1; i < levelData.quote.length; i++) {
-          const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses, prev.hintRevealedIndices);
+          const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses, userState.hintRevealedIndices);
           if (isHebrewLetter(levelData.quote[i]) && !newGuesses[i] && !locked) { 
             nextIdx = i; break; 
           }
         }
         if (nextIdx === null) {
           for (let i = 0; i < idx; i++) {
-            const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses, prev.hintRevealedIndices);
+            const locked = checkIfCellIsLocked(i, levelData, stats.currentLevel, status, newGuesses, userState.hintRevealedIndices);
             if (isHebrewLetter(levelData.quote[i]) && !newGuesses[i] && !locked) { 
               nextIdx = i; break; 
             }
           }
         }
         
-        return { ...prev, cellGuesses: newGuesses, cellFeedback: newFeedback, selectedCellIndex: nextIdx };
-      });
+        setUserState(prev => ({ ...prev, cellGuesses: newGuesses, cellFeedback: newFeedback, selectedCellIndex: nextIdx }));
 
-      setTimeout(() => {
-        setUserState(prev => {
-          const updatedFeedback = { ...prev.cellFeedback };
-          if (updatedFeedback[idx] === 'pop-active') updatedFeedback[idx] = 'correct';
-          return { ...prev, cellFeedback: updatedFeedback };
-        });
-      }, 1000);
+        setTimeout(() => {
+          setUserState(prev => {
+            const updatedFeedback = { ...prev.cellFeedback };
+            if (updatedFeedback[idx] === 'pop-active') updatedFeedback[idx] = 'correct';
+            return { ...prev, cellFeedback: updatedFeedback };
+          });
+        }, 1000);
+      }
       resetIdleTimer();
     } else {
       playSound('wrong');

@@ -139,8 +139,12 @@ const Board: React.FC<BoardProps> = ({
       
       {/* Hidden author by default, only shown if revealed */}
       <div className={`w-full mt-8 md:mt-14 text-center text-lg md:text-xl font-medium transition-all duration-500 flex flex-col items-center ${userState.isAuthorRevealed ? 'opacity-70 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`} dir="rtl">
-        <div className="h-0.5 w-16 bg-slate-200 mb-2 rounded-full"></div>
-        <span className="italic text-slate-600">{level.author}</span>
+        {userState.isAuthorRevealed && (
+          <>
+            <div className="h-0.5 w-16 bg-slate-200 mb-2 rounded-full"></div>
+            <span className="italic text-slate-600">{level.author}</span>
+          </>
+        )}
       </div>
     </div>
   );

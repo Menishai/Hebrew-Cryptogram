@@ -69,6 +69,8 @@ export interface GameLevel {
   year?: string;
   mapping: Record<string, number>; 
   revealedIndices: number[]; 
+  lockedIndices: number[];
+  maxMistakes: number;
   isLockChallenge?: boolean; 
   isDaily?: boolean;
   dailyDate?: string;

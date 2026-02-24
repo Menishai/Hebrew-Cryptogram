@@ -169,20 +169,34 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                 
                 <div className="space-y-4">
                   {rewardGoals.map((goal, idx) => {
-                    const nextMilestone = calculateMilestone(goal.current, goal.step);
+                    const progressInBatch = goal.current % goal.step;
+                    const progressPercent = (progressInBatch / goal.step) * 100;
+                    
                     return (
                       <div key={idx} className="space-y-1.5">
                         <div className="flex justify-between items-end">
                           <span className="text-sm font-bold text-slate-700">{goal.label}</span>
-                          <span className="text-[12px] font-black text-slate-500">{goal.current}/{nextMilestone}</span>
+                          <span className="text-[12px] font-black text-slate-500">
+                            {progressInBatch}/{goal.step}
+                          </span>
                         </div>
-                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                        <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner relative">
+                          {/* Progress Bar */}
                           <div 
                             className={`h-full ${goal.color} transition-all duration-700 relative`} 
-                            style={{ width: `${(goal.current / nextMilestone) * 100}%` }}
+                            style={{ width: `${progressPercent}%` }}
                           >
                              <div className="absolute inset-0 bg-white/20 shimmer"></div>
                           </div>
+                          
+                          {/* Tick Marks */}
+                          {goal.step > 1 && Array.from({ length: goal.step - 1 }).map((_, i) => (
+                            <div 
+                              key={i}
+                              className="absolute top-0 bottom-0 w-px bg-white/50 z-10"
+                              style={{ left: `${((i + 1) / goal.step) * 100}%` }}
+                            ></div>
+                          ))}
                         </div>
                       </div>
                     );

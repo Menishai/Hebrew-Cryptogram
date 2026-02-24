@@ -144,6 +144,18 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     }
   };
 
+  const getAchievementDescription = (categoryId: string, target: number) => {
+    switch (categoryId) {
+      case 'streak': return `השלם ${target} משחקים ברצף ללא הפסד`;
+      case 'level': return `הגע לשלב ${target} במשחק`;
+      case 'perfect': return `נצח ${target} משחקים ללא טעויות כלל`;
+      case 'total_wins': return `צבור ${target} ניצחונות בסך הכל`;
+      case 'difficulty': return `נצח ${target} משחקים ברמה קשה או קשה מאוד`;
+      case 'collector': return `פתור ציטוטים של ${target} מחברים שונים`;
+      default: return `הגע ליעד של ${target}`;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden" dir="rtl">
       {/* Header */}
@@ -199,6 +211,13 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
                     className="flex flex-col items-center gap-2.5 z-10 relative group"
                     onClick={() => canClaim && handleClaimClick(tier.id)}
                   >
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 hidden group-hover:block z-20 w-32 bg-slate-800 text-white text-xs rounded-lg p-2 text-center shadow-lg pointer-events-none transition-opacity duration-200 opacity-0 group-hover:opacity-100">
+                      <div className="font-bold mb-1">{tier.label}</div>
+                      <div>{getAchievementDescription(cat.id, tier.target)}</div>
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                    </div>
+
                     {/* Badge */}
                     <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300 relative ${
                       getTierIconStyle(tIdx, isAchieved, isClaimed)

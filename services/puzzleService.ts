@@ -23,6 +23,95 @@ class SeededRandom {
   }
 }
 
+interface DifficultyParams {
+  revealMin: number;
+  revealMax: number;
+  lockMin: number;
+  lockMax: number;
+  strikes: number;
+}
+
+const getDifficultyParams = (wordCount: number, difficulty: Difficulty): DifficultyParams => {
+  if (wordCount <= 3) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.35, revealMax: 0.42, lockMin: 0, lockMax: 0, strikes: 5 };
+      case Difficulty.MEDIUM: return { revealMin: 0.29, revealMax: 0.36, lockMin: 0.03, lockMax: 0.06, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.21, revealMax: 0.27, lockMin: 0.10, lockMax: 0.14, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.12, revealMax: 0.19, lockMin: 0.18, lockMax: 0.25, strikes: 3 };
+    }
+  } else if (wordCount === 4) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.31, revealMax: 0.37, lockMin: 0, lockMax: 0, strikes: 5 };
+      case Difficulty.MEDIUM: return { revealMin: 0.27, revealMax: 0.34, lockMin: 0.04, lockMax: 0.06, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.18, revealMax: 0.25, lockMin: 0.10, lockMax: 0.13, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.11, revealMax: 0.17, lockMin: 0.19, lockMax: 0.25, strikes: 3 };
+    }
+  } else if (wordCount === 5) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.29, revealMax: 0.36, lockMin: 0, lockMax: 0.03, strikes: 6 };
+      case Difficulty.MEDIUM: return { revealMin: 0.25, revealMax: 0.32, lockMin: 0.06, lockMax: 0.07, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.18, revealMax: 0.24, lockMin: 0.13, lockMax: 0.15, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.10, revealMax: 0.17, lockMin: 0.23, lockMax: 0.27, strikes: 3 };
+    }
+  } else if (wordCount === 6) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.28, revealMax: 0.35, lockMin: 0, lockMax: 0.04, strikes: 6 };
+      case Difficulty.MEDIUM: return { revealMin: 0.21, revealMax: 0.27, lockMin: 0.07, lockMax: 0.09, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.14, revealMax: 0.19, lockMin: 0.15, lockMax: 0.19, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.07, revealMax: 0.11, lockMin: 0.26, lockMax: 0.30, strikes: 3 };
+    }
+  } else if (wordCount === 7) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.27, revealMax: 0.33, lockMin: 0.04, lockMax: 0.06, strikes: 6 };
+      case Difficulty.MEDIUM: return { revealMin: 0.19, revealMax: 0.25, lockMin: 0.09, lockMax: 0.12, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.12, revealMax: 0.16, lockMin: 0.20, lockMax: 0.24, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.06, revealMax: 0.10, lockMin: 0.29, lockMax: 0.34, strikes: 3 };
+    }
+  } else if (wordCount >= 8 && wordCount <= 12) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.25, revealMax: 0.31, lockMin: 0.04, lockMax: 0.07, strikes: 6 };
+      case Difficulty.MEDIUM: return { revealMin: 0.17, revealMax: 0.22, lockMin: 0.10, lockMax: 0.12, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.10, revealMax: 0.15, lockMin: 0.21, lockMax: 0.25, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.04, revealMax: 0.07, lockMin: 0.33, lockMax: 0.40, strikes: 3 };
+    }
+  } else { // 13+ words
+    switch (difficulty) {
+      case Difficulty.EASY: return { revealMin: 0.22, revealMax: 0.28, lockMin: 0.05, lockMax: 0.08, strikes: 7 };
+      case Difficulty.MEDIUM: return { revealMin: 0.14, revealMax: 0.20, lockMin: 0.12, lockMax: 0.15, strikes: 5 };
+      case Difficulty.HARD: return { revealMin: 0.08, revealMax: 0.13, lockMin: 0.24, lockMax: 0.29, strikes: 3 };
+      case Difficulty.VERY_HARD: return { revealMin: 0.04, revealMax: 0.05, lockMin: 0.37, lockMax: 0.43, strikes: 3 };
+    }
+  }
+  // Fallback
+  return { revealMin: 0.2, revealMax: 0.3, lockMin: 0, lockMax: 0, strikes: 5 };
+};
+
+const getShortSentenceProtection = (totalLetters: number, difficulty: Difficulty) => {
+  if (totalLetters >= 2 && totalLetters <= 5) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { minReveal: 2, lockOverride: 0 };
+      case Difficulty.MEDIUM: return { minReveal: 2, lockOverride: 0 };
+      case Difficulty.HARD: return { minReveal: 1, lockOverride: 1 };
+      case Difficulty.VERY_HARD: return { minReveal: 1, lockOverride: 1 };
+    }
+  } else if (totalLetters >= 6 && totalLetters <= 9) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { minReveal: 3, lockOverride: 0 };
+      case Difficulty.MEDIUM: return { minReveal: 3, lockOverride: 0 };
+      case Difficulty.HARD: return { minReveal: 2, lockOverride: 1 };
+      case Difficulty.VERY_HARD: return { minReveal: 2, lockOverride: 1 };
+    }
+  } else if (totalLetters >= 10 && totalLetters <= 11) {
+    switch (difficulty) {
+      case Difficulty.EASY: return { minReveal: 4, lockOverride: 0 };
+      case Difficulty.MEDIUM: return { minReveal: 4, lockOverride: 0 };
+      case Difficulty.HARD: return { minReveal: 3, lockOverride: 1 };
+      case Difficulty.VERY_HARD: return { minReveal: 2, lockOverride: 1 };
+    }
+  }
+  return null;
+};
+
 export const generateCryptogramPuzzle = async (
   _requestedNumToReveal: number = 2, 
   excludedQuotes: string[] = [], 
@@ -94,14 +183,63 @@ function buildLevelFromQuote(quote: string, author: string, year: string | undef
   const uniqueLetters = new Set<string>();
   const letterPositions: number[] = [];
 
+  // 1. Count letters (ignoring spaces/punctuation)
+  let totalLetters = 0;
   for (let i = 0; i < cleanQuote.length; i++) {
     const char = cleanQuote[i];
     if (isHebrewLetter(char)) {
       uniqueLetters.add(FINAL_TO_BASE[char] || char);
       letterPositions.push(i);
+      totalLetters++;
     }
   }
 
+  // 2. Count words
+  const wordCount = cleanQuote.split(/\s+/).filter(w => w.length > 0).length;
+
+  // 3. Get difficulty parameters
+  const params = getDifficultyParams(wordCount, difficulty);
+
+    // 4. Calculate percentages
+  let targetPercentReveal: number;
+  
+  if (levelNum <= 2) {
+    targetPercentReveal = 0.53;
+  } else if (levelNum === 3) {
+    targetPercentReveal = 0.43;
+  } else if (levelNum === 4) {
+    targetPercentReveal = 0.35;
+  } else {
+    const randValReveal = sr ? sr.next() : Math.random();
+    targetPercentReveal = randValReveal * (params.revealMax - params.revealMin) + params.revealMin;
+
+    if (cleanQuote.length < 20) targetPercentReveal += 0.05;
+    if (cleanQuote.length > 50) targetPercentReveal -= 0.02;
+  }
+  
+  const randValLock = sr ? sr.next() : Math.random();
+  const targetPercentLock = randValLock * (params.lockMax - params.lockMin) + params.lockMin;
+
+  let targetRevealCount = Math.floor(totalLetters * targetPercentReveal);
+  let targetLockCount = Math.floor(totalLetters * targetPercentLock);
+
+  // 5. Short Sentence Protection
+  let isShortSentenceProtectionActive = false;
+  if (totalLetters <= 11) {
+    const protection = getShortSentenceProtection(totalLetters, difficulty);
+    if (protection) {
+      isShortSentenceProtectionActive = true;
+      targetRevealCount = Math.max(targetRevealCount, protection.minReveal);
+      targetLockCount = protection.lockOverride;
+    }
+  }
+
+  // Ensure we don't reveal more than total letters
+  targetRevealCount = Math.min(targetRevealCount, totalLetters);
+  // Ensure we don't lock more than remaining unrevealed letters
+  targetLockCount = Math.min(targetLockCount, totalLetters - targetRevealCount);
+
+  // Generate mapping
   const numbers = Array.from({ length: 22 }, (_, i) => i + 1);
   const shuffle = (arr: any[]) => {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -120,33 +258,15 @@ function buildLevelFromQuote(quote: string, author: string, year: string | undef
     if (letterToNum[base]) letterToNum[final] = letterToNum[base];
   });
 
-  const PERCENTAGES = {
-    [Difficulty.EASY]: { min: 0.25, max: 0.35 },
-    [Difficulty.MEDIUM]: { min: 0.14, max: 0.18 }, 
-    [Difficulty.HARD]: { min: 0.04, max: 0.10 },
-    [Difficulty.VERY_HARD]: { min: 0.0, max: 0.03 }
-  };
-
-  const range = PERCENTAGES[difficulty];
-  const randVal = sr ? sr.next() : Math.random();
-  let targetPercent = randVal * (range.max - range.min) + range.min;
-
-  if (cleanQuote.length < 20) targetPercent += 0.05;
-  if (cleanQuote.length > 50) targetPercent -= 0.02;
-
-  let targetRevealCount = Math.floor(letterPositions.length * targetPercent);
-  if (difficulty !== Difficulty.HARD && difficulty !== Difficulty.VERY_HARD) targetRevealCount = Math.max(targetRevealCount, 1);
-
+  // Select indices to reveal
   const shuffledPositions = [...letterPositions].sort(() => (sr ? sr.next() : Math.random()) - 0.5);
   const revealedIndices = shuffledPositions.slice(0, targetRevealCount);
 
-  let isLockChallenge = false;
-  if (levelNum >= 3) {
-    let prob = levelNum < 5 ? 0.3 : (levelNum < 10 ? 0.6 : 0.85);
-    if (difficulty === Difficulty.HARD) prob += 0.15;
-    if (difficulty === Difficulty.VERY_HARD) prob += 0.3;
-    isLockChallenge = (sr ? sr.next() : Math.random()) < prob && cleanQuote.length > 15;
-  }
+  // Select indices to lock (from remaining unrevealed)
+  const remainingIndices = shuffledPositions.slice(targetRevealCount);
+  // Shuffle remaining again just to be sure
+  const shuffledRemaining = [...remainingIndices].sort(() => (sr ? sr.next() : Math.random()) - 0.5);
+  const lockedIndices = shuffledRemaining.slice(0, targetLockCount);
 
   return {
     quote: cleanQuote,
@@ -154,6 +274,8 @@ function buildLevelFromQuote(quote: string, author: string, year: string | undef
     year,
     mapping: letterToNum,
     revealedIndices,
-    isLockChallenge
+    lockedIndices,
+    maxMistakes: params.strikes,
+    isLockChallenge: lockedIndices.length > 0 // Keep for backward compatibility if needed, but logic should use lockedIndices
   };
 }
