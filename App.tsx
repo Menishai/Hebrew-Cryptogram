@@ -14,6 +14,8 @@ import DailyQuizCalendar from './components/DailyQuizCalendar';
 import TutorialOverlay from './components/TutorialOverlay';
 import HintModal from './components/HintModal';
 import ShopModal from './components/ShopModal';
+import SplashScreen from './components/SplashScreen';
+import { AnimatePresence, motion } from 'motion/react';
 import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 
@@ -149,6 +151,7 @@ const App: React.FC = () => {
     };
   }, [resetIdleTimer]);
 
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [difficultySetting, setDifficultySetting] = useState<Difficulty | 'AUTO'>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.DIFFICULTY);
     return (saved as Difficulty) || 'AUTO';
@@ -1107,179 +1110,192 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative select-none" dir="rtl">
-      {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
-      {showShop && (
-        <ShopModal 
-          onClose={() => setShowShop(false)} 
-          onPurchaseHints={handlePurchaseHints}
-          onPurchaseRemoveAds={handlePurchaseRemoveAds}
-          onPurchaseSkipAnytime={handlePurchaseSkipAnytime}
-          onPurchaseSportsPack={handlePurchaseSportsPack}
-          onPurchaseCinemaPack={handlePurchaseCinemaPack}
-          isAdFree={!!stats.isAdFree}
-          isSkipAnytimePurchased={!!stats.isSkipAnytimePurchased}
-          isSportsPackPurchased={!!stats.isSportsPackPurchased}
-          isCinemaPackPurchased={!!stats.isCinemaPackPurchased}
-          hintsRemaining={stats.hintsRemaining}
-        />
-      )}
-      
-      {showHintMenu && (
-        <HintModal 
-          onRevealLetter={handleRevealLetterOption} 
-          onRevealAuthor={handleRevealAuthorOption} 
-          onRevealLocked={handleRevealLockedOption}
-          onCancel={() => setShowHintMenu(false)}
-          isAuthorRevealed={userState.isAuthorRevealed}
-          hintsRemaining={userState.hintsRemaining}
-          hasLockedCells={hasLockedCells}
-        />
-      )}
-
-      {isUndoConfirmVisible && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/40" dir="rtl">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 text-center">
-            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
-              <i className="fa-solid fa-arrow-rotate-left"></i>
-            </div>
-            <h3 className="text-xl font-black text-slate-800 mb-4">ביטול פעולה</h3>
-            <p className="text-slate-500 font-medium mb-8">ביטול פעולה יעלה ב-1 רמז. האם אתה בטוח?</p>
-            <div className="flex gap-4">
-              <button 
-                onClick={confirmUndo}
-                className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all"
-              >
-                כן, בטל
-              </button>
-              <button 
-                onClick={() => setIsUndoConfirmVisible(false)}
-                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black hover:bg-slate-200 active:scale-95 transition-all"
-              >
-                חזור
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {reportToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl font-black text-sm animate-in slide-in-from-top flex items-center gap-3">
-          <i className="fa-solid fa-envelope text-emerald-400"></i>
-          אפליקציית המייל נפתחה לדיווח. תודה!
-        </div>
-      )}
-
-      {packExhaustedToast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold text-center animate-in slide-in-from-top flex flex-col items-center gap-1 border-2 border-blue-400">
-          <div className="flex items-center gap-2">
-            <i className="fa-solid fa-circle-info"></i>
-            <span>סיימת את כל הציטוטים בחבילה!</span>
-          </div>
-          <p className="text-[10px] opacity-90">בינתיים תקבל ציטוטים מקטגוריות אחרות. משפטים חדשים יתווספו בקרוב!</p>
-        </div>
-      )}
-      
-      {currentScreen === Screen.HOME ? (
-        <MainMenu 
-          onNewGame={() => startNewGame()} 
-          onContinue={continueGame} 
-          hasSavedGame={hasSavedGame} 
-          onStats={() => setCurrentScreen(Screen.STATS)} 
-          onSettings={() => setCurrentScreen(Screen.SETTINGS)} 
-          onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} 
-          onDailyQuiz={() => setCurrentScreen(Screen.DAILY_QUIZ)}
-          onShowTutorial={() => setShowTutorial(true)} 
-          onOpenShop={() => setShowShop(true)} 
-          currentLevel={stats.currentLevel || 1} 
-          hasUnclaimedAchievements={hasUnclaimedAchievements} 
-        />
-      ) : currentScreen === Screen.STATS ? (
-        <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
-      ) : currentScreen === Screen.DAILY_QUIZ ? (
-        <DailyQuizCalendar dailyProgress={stats.dailyProgress || {}} onBack={() => setCurrentScreen(Screen.HOME)} onSelectDate={startDailyGame} />
-      ) : currentScreen === Screen.SETTINGS ? (
-        <SettingsScreen 
-          difficulty={difficultySetting} 
-          onDifficultyChange={handleDifficultyChange} 
-          fontSize={fontSize} 
-          onFontSizeChange={(f) => setFontSize(f)} 
-          vibrationEnabled={vibrationEnabled} 
-          onVibrationToggle={() => setVibrationEnabled(!vibrationEnabled)} 
-          soundEnabled={soundEnabled} 
-          onSoundToggle={() => setSoundEnabled(!soundEnabled)} 
-          onBack={() => setCurrentScreen(Screen.HOME)}
-          stats={stats}
-          onImportData={handleImportData}
-          onReportMistake={handleReportMistake}
-          activeCategories={activeCategories}
-          onCategoriesChange={handleActiveCategoriesChange}
-        />
-      ) : currentScreen === Screen.ACHIEVEMENTS ? (
-        <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
-      ) : (
-        <div className="flex flex-col h-full overflow-hidden">
-          <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode || isLockedHintMode} isIdle={isIdle} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
-          <main 
-            ref={mainScrollRef}
-            style={{ fontSize: '16.5px' }}
-            className="flex-1 overflow-y-auto px-2 py-4 md:px-6 md:py-8 max-w-4xl mx-auto w-full flex flex-col items-center"
+      <AnimatePresence mode="wait">
+        {isSplashVisible ? (
+          <SplashScreen key="splash" onComplete={() => setIsSplashVisible(false)} />
+        ) : (
+          <motion.div 
+            key="main-app"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col h-full w-full absolute inset-0"
           >
-            {status === GameStatus.LOADING ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-medium text-center">מכין את הפאזל הבא...</p>
+            {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
+            {showShop && (
+              <ShopModal 
+                onClose={() => setShowShop(false)} 
+                onPurchaseHints={handlePurchaseHints}
+                onPurchaseRemoveAds={handlePurchaseRemoveAds}
+                onPurchaseSkipAnytime={handlePurchaseSkipAnytime}
+                onPurchaseSportsPack={handlePurchaseSportsPack}
+                onPurchaseCinemaPack={handlePurchaseCinemaPack}
+                isAdFree={!!stats.isAdFree}
+                isSkipAnytimePurchased={!!stats.isSkipAnytimePurchased}
+                isSportsPackPurchased={!!stats.isSportsPackPurchased}
+                isCinemaPackPurchased={!!stats.isCinemaPackPurchased}
+                hintsRemaining={stats.hintsRemaining}
+              />
+            )}
+            
+            {showHintMenu && (
+              <HintModal 
+                onRevealLetter={handleRevealLetterOption} 
+                onRevealAuthor={handleRevealAuthorOption} 
+                onRevealLocked={handleRevealLockedOption}
+                onCancel={() => setShowHintMenu(false)}
+                isAuthorRevealed={userState.isAuthorRevealed}
+                hintsRemaining={userState.hintsRemaining}
+                hasLockedCells={hasLockedCells}
+              />
+            )}
+
+            {isUndoConfirmVisible && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/40" dir="rtl">
+                <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 text-center">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+                    <i className="fa-solid fa-arrow-rotate-left"></i>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 mb-4">ביטול פעולה</h3>
+                  <p className="text-slate-500 font-medium mb-8">ביטול פעולה יעלה ב-1 רמז. האם אתה בטוח?</p>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={confirmUndo}
+                      className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all"
+                    >
+                      כן, בטל
+                    </button>
+                    <button 
+                      onClick={() => setIsUndoConfirmVisible(false)}
+                      className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black hover:bg-slate-200 active:scale-95 transition-all"
+                    >
+                      חזור
+                    </button>
+                  </div>
+                </div>
               </div>
+            )}
+
+            {reportToast && (
+              <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl font-black text-sm animate-in slide-in-from-top flex items-center gap-3">
+                <i className="fa-solid fa-envelope text-emerald-400"></i>
+                אפליקציית המייל נפתחה לדיווח. תודה!
+              </div>
+            )}
+
+            {packExhaustedToast && (
+              <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold text-center animate-in slide-in-from-top flex flex-col items-center gap-1 border-2 border-blue-400">
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-circle-info"></i>
+                  <span>סיימת את כל הציטוטים בחבילה!</span>
+                </div>
+                <p className="text-[10px] opacity-90">בינתיים תקבל ציטוטים מקטגוריות אחרות. משפטים חדשים יתווספו בקרוב!</p>
+              </div>
+            )}
+            
+            {currentScreen === Screen.HOME ? (
+              <MainMenu 
+                onNewGame={() => startNewGame()} 
+                onContinue={continueGame} 
+                hasSavedGame={hasSavedGame} 
+                onStats={() => setCurrentScreen(Screen.STATS)} 
+                onSettings={() => setCurrentScreen(Screen.SETTINGS)} 
+                onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} 
+                onDailyQuiz={() => setCurrentScreen(Screen.DAILY_QUIZ)}
+                onShowTutorial={() => setShowTutorial(true)} 
+                onOpenShop={() => setShowShop(true)} 
+                currentLevel={stats.currentLevel || 1} 
+                hasUnclaimedAchievements={hasUnclaimedAchievements} 
+              />
+            ) : currentScreen === Screen.STATS ? (
+              <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
+            ) : currentScreen === Screen.DAILY_QUIZ ? (
+              <DailyQuizCalendar dailyProgress={stats.dailyProgress || {}} onBack={() => setCurrentScreen(Screen.HOME)} onSelectDate={startDailyGame} />
+            ) : currentScreen === Screen.SETTINGS ? (
+              <SettingsScreen 
+                difficulty={difficultySetting} 
+                onDifficultyChange={handleDifficultyChange} 
+                fontSize={fontSize} 
+                onFontSizeChange={(f) => setFontSize(f)} 
+                vibrationEnabled={vibrationEnabled} 
+                onVibrationToggle={() => setVibrationEnabled(!vibrationEnabled)} 
+                soundEnabled={soundEnabled} 
+                onSoundToggle={() => setSoundEnabled(!soundEnabled)} 
+                onBack={() => setCurrentScreen(Screen.HOME)}
+                stats={stats}
+                onImportData={handleImportData}
+                onReportMistake={handleReportMistake}
+                activeCategories={activeCategories}
+                onCategoriesChange={handleActiveCategoriesChange}
+              />
+            ) : currentScreen === Screen.ACHIEVEMENTS ? (
+              <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
             ) : (
-              <Board level={levelData!} userState={userState} fontSize={fontSize} isHintMode={isHintMode} isLockedHintMode={isLockedHintMode} onSelect={handleCellClick} completedLetters={completedLetters} celebratingWordIdx={celebratingWordIdx} isCellLocked={isCellLocked} />
-            )}
-            {!isOverlayVisible && (status === GameStatus.WON || status === GameStatus.LOST) && (
-              <div className="mt-8 flex flex-col items-center gap-4 animate-in slide-in-from-bottom duration-500 pb-8">
-                <div className="bg-green-100 text-green-800 px-6 py-2 rounded-full font-bold text-sm">הפתרון נחשף בלוח!</div>
-                <button onClick={handleGameOverAction} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-3">
-                  <i className="fa-solid fa-arrow-left"></i>
-                  <span>{levelData?.isDaily ? 'חזרה ליומן' : (status === GameStatus.WON ? 'לשלב הבא' : 'נסה שלב חדש')}</span>
-                </button>
-              </div>
-            )}
-          </main>
-          <div className="pb-1 md:pb-2 px-2 flex-shrink-0 flex flex-col items-center gap-1 md:gap-2">
-            <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode || isLockedHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
-            {status === GameStatus.PLAYING && (
-              <div className="opacity-30 hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={handleReportMistake} 
-                  className="text-[9px] font-bold text-slate-400 flex items-center gap-1 border border-slate-200 border-dashed px-2 py-0.5 rounded-full transition-colors hover:bg-slate-50"
+              <div className="flex flex-col h-full overflow-hidden">
+                <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode || isLockedHintMode} isIdle={isIdle} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
+                <main 
+                  ref={mainScrollRef}
+                  style={{ fontSize: '16.5px' }}
+                  className="flex-1 overflow-y-auto px-2 py-4 md:px-6 md:py-8 max-w-4xl mx-auto w-full flex flex-col items-center"
                 >
-                  <i className="fa-solid fa-pen-nib"></i>
-                  דווח על טעות
-                </button>
+                  {status === GameStatus.LOADING ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                      <p className="text-gray-500 font-medium text-center">מכין את הפאזל הבא...</p>
+                    </div>
+                  ) : (
+                    <Board level={levelData!} userState={userState} fontSize={fontSize} isHintMode={isHintMode} isLockedHintMode={isLockedHintMode} onSelect={handleCellClick} completedLetters={completedLetters} celebratingWordIdx={celebratingWordIdx} isCellLocked={isCellLocked} />
+                  )}
+                  {!isOverlayVisible && (status === GameStatus.WON || status === GameStatus.LOST) && (
+                    <div className="mt-8 flex flex-col items-center gap-4 animate-in slide-in-from-bottom duration-500 pb-8">
+                      <div className="bg-green-100 text-green-800 px-6 py-2 rounded-full font-bold text-sm">הפתרון נחשף בלוח!</div>
+                      <button onClick={handleGameOverAction} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <i className="fa-solid fa-arrow-left"></i>
+                        <span>{levelData?.isDaily ? 'חזרה ליומן' : (status === GameStatus.WON ? 'לשלב הבא' : 'נסה שלב חדש')}</span>
+                      </button>
+                    </div>
+                  )}
+                </main>
+                <div className="pb-1 md:pb-2 px-2 flex-shrink-0 flex flex-col items-center gap-1 md:gap-2">
+                  <Keyboard onPress={handleKeyPress} disabled={status !== GameStatus.PLAYING || isHintMode || isLockedHintMode} completedLetters={completedLetters} foundLetters={foundLetters} />
+                  {status === GameStatus.PLAYING && (
+                    <div className="opacity-30 hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={handleReportMistake} 
+                        className="text-[9px] font-bold text-slate-400 flex items-center gap-1 border border-slate-200 border-dashed px-2 py-0.5 rounded-full transition-colors hover:bg-slate-50"
+                      >
+                        <i className="fa-solid fa-pen-nib"></i>
+                        דווח על טעות
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {status === GameStatus.WON && isOverlayVisible && (
+                  <GameOverlay title="כל הכבוד!" message={levelData?.isDaily ? `השלמת את החידון היומי!` : `סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={handleGameOverAction} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} onReportMistake={handleReportMistake} />
+                )}
+                {status === GameStatus.LOST && isOverlayVisible && (
+                  <GameOverlay 
+                    title="המשחק נגמר" 
+                    message={
+                      levelData?.isDaily 
+                        ? (isDailyRetryAllowed 
+                            ? (dailyAttemptsLeft === 1 ? "שימו לב: נותר ניסיון אחרון להיום!" : `נותרו לך עוד ${dailyAttemptsLeft} ניסיונות להיום.`)
+                            : "נגמרו הניסיונות להיום. נתראה מחר!") 
+                        : "עשית יותר מדי טעויות. נסה שוב!"
+                    } 
+                    type="lost" 
+                    onAction={handleGameOverAction} 
+                    onRetry={(!levelData?.isDaily || isDailyRetryAllowed) ? handleRetryLevel : undefined} 
+                    onReveal={revealSolution} 
+                    author={levelData?.author} 
+                    showRevealButton={!levelData?.isDaily} 
+                    onReportMistake={handleReportMistake} 
+                  />
+                )}
               </div>
             )}
-          </div>
-          {status === GameStatus.WON && isOverlayVisible && (
-            <GameOverlay title="כל הכבוד!" message={levelData?.isDaily ? `השלמת את החידון היומי!` : `סיימת את שלב ${stats.currentLevel - 1}!`} type="won" onAction={handleGameOverAction} onReveal={revealSolution} quote={levelData?.quote} author={levelData?.author} year={levelData?.year} showRevealButton={false} bonusMessage={rewardMessage} onReportMistake={handleReportMistake} />
-          )}
-          {status === GameStatus.LOST && isOverlayVisible && (
-            <GameOverlay 
-              title="המשחק נגמר" 
-              message={
-                levelData?.isDaily 
-                  ? (isDailyRetryAllowed 
-                      ? (dailyAttemptsLeft === 1 ? "שימו לב: נותר ניסיון אחרון להיום!" : `נותרו לך עוד ${dailyAttemptsLeft} ניסיונות להיום.`)
-                      : "נגמרו הניסיונות להיום. נתראה מחר!") 
-                  : "עשית יותר מדי טעויות. נסה שוב!"
-              } 
-              type="lost" 
-              onAction={handleGameOverAction} 
-              onRetry={(!levelData?.isDaily || isDailyRetryAllowed) ? handleRetryLevel : undefined} 
-              onReveal={revealSolution} 
-              author={levelData?.author} 
-              showRevealButton={!levelData?.isDaily} 
-              onReportMistake={handleReportMistake} 
-            />
-          )}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
