@@ -219,6 +219,7 @@ const App: React.FC = () => {
         ...parsed,
         hintsRemaining: parsed.hintsRemaining !== undefined ? parsed.hintsRemaining : initialStats.hintsRemaining,
         currentLevel: parsed.currentLevel || 1,
+        perfectGames: parsed.perfectGames || 0,
         usedQuotes: Array.isArray(parsed.usedQuotes) ? parsed.usedQuotes : [],
         claimedAchievements: Array.isArray(parsed.claimedAchievements) ? parsed.claimedAchievements : [],
         totalMistakes: parsed.totalMistakes || 0,
@@ -264,7 +265,7 @@ const App: React.FC = () => {
   useEffect(() => { persistStats(stats); }, [stats]);
 
   useEffect(() => {
-    if (currentScreen === Screen.PLAYING && levelData && status === GameStatus.PLAYING && !levelData.isDaily) {
+    if (currentScreen === Screen.PLAYING && levelData && status === GameStatus.PLAYING) {
       persistGameState({ levelData, userState, difficulty: currentLevelDifficulty, history });
     }
   }, [currentScreen, levelData, userState, currentLevelDifficulty, status, history]);
@@ -275,7 +276,7 @@ const App: React.FC = () => {
     if (saved && (lastScreen === Screen.PLAYING)) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.levelData && parsed.userState && !parsed.levelData.isDaily) {
+        if (parsed.levelData && parsed.userState) {
           setLevelData(parsed.levelData);
           setUserState({
             ...parsed.userState,
@@ -461,6 +462,7 @@ const App: React.FC = () => {
         }
 
         newStats.gamesWon += 1;
+        if (mistakesCount === 0) newStats.perfectGames += 1;
         newStats.currentStreak += 1;
         newStats.bestStreak = Math.max(newStats.bestStreak, newStats.currentStreak);
         
@@ -506,9 +508,7 @@ const App: React.FC = () => {
       return newStats;
     });
     
-    if (!levelInfo.isDaily) {
-      localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
-    }
+    localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
   }, []);
 
   const handleClaimAchievement = (id: string) => {
@@ -668,9 +668,7 @@ const App: React.FC = () => {
     setUserState(initialUserState);
     setStatus(GameStatus.PLAYING);
     
-    if (!newLevel.isDaily) {
-      persistGameState({ levelData: newLevel, userState: initialUserState, difficulty: diff, history: [] });
-    }
+    persistGameState({ levelData: newLevel, userState: initialUserState, difficulty: diff, history: [] });
 
     if ((newLevel as any).wasCategoryExhausted) {
       setPackExhaustedToast(true);
@@ -717,6 +715,28 @@ const App: React.FC = () => {
       return;
     }
 
+    const saved = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.levelData?.isDaily && parsed.levelData?.dailyDate === dateStr) {
+          const syncedUserState = {
+            ...parsed.userState,
+            hintsRemaining: stats.hintsRemaining
+          };
+          setLevelData(parsed.levelData);
+          setUserState(syncedUserState);
+          setCurrentLevelDifficulty(parsed.difficulty || 'AUTO');
+          setHistory(parsed.history || []);
+          setStatus(GameStatus.PLAYING);
+          setCurrentScreen(Screen.PLAYING);
+          return;
+        }
+      } catch (e) {
+        // Ignore parse error, proceed to start fresh
+      }
+    }
+
     setCurrentScreen(Screen.PLAYING);
     setCelebratingWordIdx(null);
     setIsOverlayVisible(true);
@@ -733,7 +753,7 @@ const App: React.FC = () => {
     } catch (e) {
       setCurrentScreen(Screen.DAILY_QUIZ);
     }
-  }, [initLevelState, stats.dailyProgress]);
+  }, [initLevelState, stats.dailyProgress, stats.hintsRemaining]);
 
   const handleRetryLevel = useCallback(() => {
     if (!levelData) return;
