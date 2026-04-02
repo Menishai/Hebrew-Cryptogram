@@ -18,6 +18,7 @@ import SplashScreen from './components/SplashScreen';
 import { AnimatePresence, motion } from 'motion/react';
 import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
+import { motion } from "framer-motion";
 
 const APP_VERSION = '2.1.0';
 
