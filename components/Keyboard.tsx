@@ -23,7 +23,7 @@ const Keyboard: React.FC<KeyboardProps> = ({ onPress, disabled, completedLetters
   ];
 
   return (
-    <div className="flex flex-col items-center space-y-1 md:space-y-2 max-w-3xl mx-auto w-full px-1" dir="rtl">
+    <div className="flex flex-col items-center space-y-1 md:space-y-2 max-w-3xl mx-auto w-full px-1" dir="rtl" style={{ paddingBottom: 'env(safe-area-inset-bottom, 10px)' }}>
       {rows.map((row, i) => (
         <div key={i} className="flex justify-center space-x-1 space-x-reverse w-full">
           {row.map(letter => {

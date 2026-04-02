@@ -9,13 +9,16 @@ interface DailyQuizCalendarProps {
 }
 
 const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress }) => {
-  const [selectedMonth, setSelectedMonth] = useState<number>(1); // 1 = Feb, 2 = March
+  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3
+  const initialMonth = Math.max(1, Math.min(3, currentRealMonth));
+  const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
   const [lockedDateSelected, setLockedDateSelected] = useState<boolean>(false);
   const [timeToNextQuiz, setTimeToNextQuiz] = useState<string>('');
 
   const months = [
     { name: 'פברואר', days: 28, value: 1 },
-    { name: 'מרץ', days: 31, value: 2 }
+    { name: 'מרץ', days: 31, value: 2 },
+    { name: 'אפריל', days: 30, value: 3 }
   ];
 
   const currentMonthData = months.find(m => m.value === selectedMonth) || months[0];
@@ -24,7 +27,10 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   
   // Current real date logic for locking future days
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const day = now.getDate().toString().padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
 
   useEffect(() => {
     let interval: number;
@@ -77,7 +83,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   };
 
   const nextMonth = () => {
-    if (selectedMonth < 2) setSelectedMonth(selectedMonth + 1);
+    if (selectedMonth < 3) setSelectedMonth(selectedMonth + 1);
   };
 
   const prevMonth = () => {
@@ -128,7 +134,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
              <p className="text-[11px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
              <button 
               onClick={nextMonth} 
-              disabled={selectedMonth === 2}
+              disabled={selectedMonth === 3}
               className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
              >
                <i className="fa-solid fa-chevron-left text-xs"></i>
@@ -184,6 +190,10 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
               <div key={d} className="text-center font-black text-slate-400 text-xs py-2">{d}'</div>
             ))}
             
+            {Array.from({ length: new Date(2026, selectedMonth, 1).getDay() }).map((_, i) => (
+              <div key={`empty-${i}`} className="p-2"></div>
+            ))}
+
             {days.map(d => {
               const monthStr = (selectedMonth + 1).toString().padStart(2, '0');
               const dateStr = `2026-${monthStr}-${d.toString().padStart(2, '0')}`;

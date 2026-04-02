@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { motion } from 'motion/react';
 
 interface MainMenuProps {
   onNewGame: () => void;
@@ -69,7 +70,10 @@ const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* New Modern Logo Section */}
       <div className="mt-8 md:mt-12 mb-10 md:mb-14 relative z-10">
-        <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-6 md:mb-8 animate-float">
+        <motion.div 
+          layoutId="app-logo"
+          className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-6 md:mb-8 animate-float"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-blue-200 rotate-6 transform transition-transform group-hover:rotate-0"></div>
           <div className="absolute inset-0 bg-white/10 backdrop-blur-sm border border-white/20 rounded-[2rem] md:rounded-[2.5rem] -rotate-3 overflow-hidden">
              <div className="shimmer absolute inset-0 opacity-30"></div>
@@ -89,10 +93,22 @@ const MainMenu: React.FC<MainMenuProps> = ({
           <div className="absolute -bottom-2 -left-2 w-8 h-8 md:w-10 md:h-10 bg-indigo-500 rounded-2xl flex items-center justify-center text-white text-base md:text-lg shadow-lg rotate-12">
             <i className="fa-solid fa-hashtag text-[9px] md:text-[11px]"></i>
           </div>
-        </div>
+        </motion.div>
 
-        <h1 className="text-4xl md:text-6xl font-[900] tracking-tight mb-2 text-gradient">אלוף הצופן</h1>
-        <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[11px] md:text-[12px]">Cryptogram Master Elite</p>
+        <motion.h1 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-4xl md:text-6xl font-[900] tracking-tight mb-2 text-gradient"
+        >
+          אלוף הצופן
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[11px] md:text-[12px]"
+        >
+          Cryptogram Master Elite
+        </motion.p>
         <div className="mt-4 flex items-center justify-center gap-2">
             <div className="h-1 w-6 md:w-8 bg-blue-200 rounded-full"></div>
             <div className="h-1 w-2 bg-blue-400 rounded-full"></div>
