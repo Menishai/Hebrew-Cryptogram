@@ -12,12 +12,17 @@ interface SettingsScreenProps {
   onVibrationToggle: () => void;
   soundEnabled: boolean;
   onSoundToggle: () => void;
+  notificationsEnabled: boolean;
+  onNotificationsToggle: () => void;
+  notificationTime: string;
+  onNotificationTimeChange: (time: string) => void;
   onBack: () => void;
   stats: Statistics;
   onImportData: (data: any) => void;
   onReportMistake?: () => void;
   activeCategories: QuoteCategory[];
   onCategoriesChange: (cats: QuoteCategory[]) => void;
+  onOpenShop: () => void;
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ 
@@ -29,18 +34,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onVibrationToggle,
   soundEnabled, 
   onSoundToggle,
+  notificationsEnabled,
+  onNotificationsToggle,
+  notificationTime,
+  onNotificationTimeChange,
   onBack,
   stats,
   onImportData,
   onReportMistake,
   activeCategories,
   onCategoriesChange
+  onOpenShop
 }) => {
   const [importMode, setImportMode] = useState(false);
   const [exportMode, setExportMode] = useState(false);
   const [exportedCode, setExportedCode] = useState('');
   const [importValue, setImportValue] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [isPacksExpanded, setIsPacksExpanded] = useState(false);
+  const [lockedPackClicked, setLockedPackClicked] = useState<string | null>(null);
 
   // Swipe back logic
   const touchStartRef = useRef<number | null>(null);
@@ -161,29 +173,26 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Difficulty Section */}
         <section>
           <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">רמת קושי</h3>
-          <div className="space-y-2">
-            {difficultyOptions.map((opt) => (
+          <div className="grid grid-cols-2 gap-2">
+            {difficultyOptions.map((opt, idx) => (
               <button
                 key={opt.id}
                 onClick={() => onDifficultyChange(opt.id as any)}
-                className={`w-full p-4 rounded-3xl flex items-center gap-4 transition-all border-2 text-right ${
+                className={`p-2 rounded-2xl flex items-center gap-2 transition-all border-2 text-right ${
+                  idx === 0 ? 'col-span-2' : ''
+                } ${
                   difficulty === opt.id 
-                    ? 'bg-white border-blue-600 shadow-md scale-[1.01]' 
+                    ? 'bg-white border-blue-600 shadow-md scale-[1.02]' 
                     : 'bg-white border-slate-200 shadow-sm grayscale opacity-70'
                 }`}
               >
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg bg-slate-50 ${opt.color}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm bg-slate-50 flex-shrink-0 ${opt.color}`}>
                   <i className={`fa-solid ${opt.icon}`}></i>
                 </div>
                 <div className="flex-1">
-                  <div className="text-base font-black text-slate-800 leading-tight">{opt.label}</div>
-                  <div className="text-[11px] text-slate-500 font-medium">{opt.desc}</div>
+                  <div className="text-sm font-black text-slate-800 leading-none">{opt.label}</div>
+                  <div className="text-[9px] text-slate-500 font-medium mt-1 leading-tight">{opt.desc}</div>
                 </div>
-                {difficulty === opt.id && (
-                  <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px]">
-                    <i className="fa-solid fa-check"></i>
-                  </div>
-                )}
               </button>
             ))}
           </div>
@@ -213,27 +222,74 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Category Pack Section */}
         <section>
           <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest px-2 mb-3 text-right">חבילות תוכן</h3>
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100">
-            {packOptions.map((pack) => (
-              <div key={pack.id} className={`flex items-center justify-between p-4 ${!pack.purchased ? 'opacity-40' : ''}`}>
-                <div className="flex items-center gap-3 text-right">
-                  <span className={`text-sm font-bold ${activeCategories.includes(pack.id as QuoteCategory) ? 'text-blue-700' : 'text-slate-600'}`}>
-                    {pack.label}
-                  </span>
-                  {!pack.purchased && <i className="fa-solid fa-lock text-[10px] text-slate-400"></i>}
-                </div>
-                <button 
-                  disabled={!pack.purchased}
-                  onClick={() => toggleCategory(pack.id as QuoteCategory)}
-                  className={`w-11 h-6 rounded-full relative transition-colors ${activeCategories.includes(pack.id as QuoteCategory) ? 'bg-blue-600' : 'bg-slate-300'}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${activeCategories.includes(pack.id as QuoteCategory) ? 'left-6' : 'left-1'}`} />
-                </button>
+          <button 
+            onClick={() => setIsPacksExpanded(!isPacksExpanded)}
+            className={`w-full flex items-center justify-between p-4 rounded-3xl transition-all border-2 ${isPacksExpanded ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200 shadow-sm'}`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                <i className="fa-solid fa-layer-group"></i>
               </div>
-            ))}
-          </div>
-          {!stats.isSportsPackPurchased && !stats.isCinemaPackPurchased && (
-            <p className="text-[10px] text-slate-400 font-bold mt-2 px-2 text-center">חבילות תוכן חדשות זמינות בחנות!</p>
+              <div className="text-right">
+                <h3 className="text-sm font-black text-slate-800">ניהול חבילות תוכן</h3>
+                <p className="text-[10px] text-slate-500 font-medium">{activeCategories.length} חבילות פעילות</p>
+              </div>
+            </div>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 transition-transform ${isPacksExpanded ? 'rotate-180' : ''}`}>
+              <i className="fa-solid fa-chevron-down text-slate-400"></i>
+            </div>
+          </button>
+          
+          {isPacksExpanded && (
+            <div className="mt-3 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2">
+              {packOptions.map((pack) => (
+                <div key={pack.id} className="flex flex-col">
+                  <div 
+                    className={`flex items-center justify-between p-4 ${!pack.purchased ? 'opacity-50 cursor-pointer hover:bg-slate-50 transition-colors' : ''}`}
+                    onClick={() => {
+                      if (!pack.purchased) {
+                        setLockedPackClicked(lockedPackClicked === pack.id ? null : pack.id);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3 text-right">
+                      <span className={`text-sm font-bold ${activeCategories.includes(pack.id as QuoteCategory) ? 'text-blue-700' : 'text-slate-600'}`}>
+                        {pack.label}
+                      </span>
+                      {!pack.purchased && <i className="fa-solid fa-lock text-[10px] text-slate-400"></i>}
+                    </div>
+                    <button 
+                      disabled={!pack.purchased}
+                      onClick={(e) => {
+                        if (pack.purchased) {
+                          e.stopPropagation();
+                          toggleCategory(pack.id as QuoteCategory);
+                        }
+                      }}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${activeCategories.includes(pack.id as QuoteCategory) ? 'bg-blue-600' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${activeCategories.includes(pack.id as QuoteCategory) ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  
+                  {/* Shop Prompt for Locked Packs */}
+                  {!pack.purchased && lockedPackClicked === pack.id && (
+                    <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-t border-slate-100 animate-in slide-in-from-top-2">
+                      <span className="text-xs text-slate-500 font-medium">החבילה זמינה לרכישה בחנות</span>
+                      <button 
+                        onClick={onOpenShop}
+                        className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 transition-colors"
+                      >
+                        לחנות <i className="fa-solid fa-store mr-1"></i>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {isPacksExpanded && !stats.isSportsPackPurchased && !stats.isCinemaPackPurchased && (
+            <p className="text-[10px] text-slate-400 font-bold mt-2 px-2 text-center animate-in fade-in">חבילות תוכן חדשות זמינות בחנות!</p>
           )}
         </section>
 
@@ -258,6 +314,28 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <button onClick={onSoundToggle} className={`w-11 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${soundEnabled ? 'left-6' : 'left-1'}`} />
               </button>
+            </div>
+                        <div className="flex flex-col p-4 gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-right">
+                  <i className={`fa-solid fa-bell text-lg ${notificationsEnabled ? 'text-yellow-500' : 'text-slate-300'}`}></i>
+                  <span className="font-bold text-slate-800 text-sm">התראות חידון יומי</span>
+                </div>
+                <button onClick={onNotificationsToggle} className={`w-11 h-6 rounded-full relative transition-colors ${notificationsEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${notificationsEnabled ? 'left-6' : 'left-1'}`} />
+                </button>
+              </div>
+              {notificationsEnabled && (
+                <div className="flex items-center justify-between pl-2 pr-8 animate-in fade-in slide-in-from-top-2">
+                  <span className="text-xs font-bold text-slate-500">שעת התראה:</span>
+                  <input 
+                    type="time" 
+                    value={notificationTime} 
+                    onChange={(e) => onNotificationTimeChange(e.target.value)}
+                    className="bg-slate-100 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-1 font-mono"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </section>

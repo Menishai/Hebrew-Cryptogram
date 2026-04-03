@@ -172,6 +172,16 @@ const App: React.FC = () => {
     return saved === null ? true : saved === 'true';
   });
 
+    const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('cryptogram-notifications');
+    return saved === 'true';
+  });
+
+  const [notificationTime, setNotificationTime] = useState<string>(() => {
+    const saved = localStorage.getItem('cryptogram-notification-time');
+    return saved || '10:30';
+  });
+
   const [activeCategories, setActiveCategories] = useState<QuoteCategory[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_CATEGORIES);
     if (!saved) return ['proverb', 'song', 'source', 'famous'];
@@ -264,6 +274,14 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SOUND, String(soundEnabled)); }, [soundEnabled]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.LAST_SCREEN, currentScreen); }, [currentScreen]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.ACTIVE_CATEGORIES, JSON.stringify(activeCategories)); }, [activeCategories]);
+  
+    useEffect(() => {
+    localStorage.setItem('cryptogram-notifications', String(notificationsEnabled));
+    localStorage.setItem('cryptogram-notification-time', notificationTime);
+    import('./utils/notifications').then(({ setupDailyNotification }) => {
+      setupDailyNotification(notificationsEnabled, notificationTime);
+    });
+  }, [notificationsEnabled, notificationTime]);
   
   useEffect(() => { persistStats(stats); }, [stats]);
 
@@ -1220,12 +1238,17 @@ const App: React.FC = () => {
                 onVibrationToggle={() => setVibrationEnabled(!vibrationEnabled)} 
                 soundEnabled={soundEnabled} 
                 onSoundToggle={() => setSoundEnabled(!soundEnabled)} 
+                notificationsEnabled={notificationsEnabled}
+                onNotificationsToggle={() => setNotificationsEnabled(!notificationsEnabled)}
+                notificationTime={notificationTime}
+                onNotificationTimeChange={(t) => setNotificationTime(t)}
                 onBack={() => setCurrentScreen(Screen.HOME)}
                 stats={stats}
                 onImportData={handleImportData}
                 onReportMistake={handleReportMistake}
                 activeCategories={activeCategories}
                 onCategoriesChange={handleActiveCategoriesChange}
+                onOpenShop={() => setShowShop(true)}
               />
             ) : currentScreen === Screen.ACHIEVEMENTS ? (
               <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
