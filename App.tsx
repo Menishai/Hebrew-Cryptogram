@@ -19,7 +19,7 @@ import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 import { motion, AnimatePresence } from "framer-motion";
 
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '1.2.1';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
