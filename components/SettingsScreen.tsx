@@ -43,7 +43,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onImportData,
   onReportMistake,
   activeCategories,
-  onCategoriesChange
+  onCategoriesChange,
   onOpenShop
 }) => {
   const [importMode, setImportMode] = useState(false);
