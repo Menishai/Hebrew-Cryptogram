@@ -20,7 +20,7 @@ import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.3.2';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -368,6 +368,31 @@ const App: React.FC = () => {
       setActiveCategories(prev => [...prev, 'cinema']);
       setPreFetchedLevel(null);
     }
+    playSound('win');
+  };
+
+    const handlePurchaseBundle = () => {
+    setStats(prev => {
+      const newStats = { 
+        ...prev, 
+        isAdFree: true, 
+        isSkipAnytimePurchased: true, 
+        isSportsPackPurchased: true, 
+        isCinemaPackPurchased: true,
+        hintsRemaining: prev.hintsRemaining + 300
+      };
+      persistStats(newStats);
+      return newStats;
+    });
+    setUserState(prev => ({ ...prev, hintsRemaining: prev.hintsRemaining + 300 }));
+    
+    setActiveCategories(prev => {
+      const newCats = [...prev];
+      if (!newCats.includes('sports')) newCats.push('sports');
+      if (!newCats.includes('cinema')) newCats.push('cinema');
+      return newCats;
+    });
+    setPreFetchedLevel(null);
     playSound('win');
   };
 
@@ -1159,8 +1184,11 @@ const App: React.FC = () => {
   const hasSavedGame = !!localStorage.getItem(STORAGE_KEYS.GAME_STATE);
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative select-none" dir="rtl">
-      <AnimatePresence mode="wait">
+<div 
+  className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative select-none" 
+  dir="rtl"
+  style={{ paddingTop: 'max(env(safe-area-inset-top), 35px)' }}>
+        <AnimatePresence mode="wait">
         {isSplashVisible ? (
           <SplashScreen key="splash" onComplete={() => setIsSplashVisible(false)} />
         ) : (
@@ -1179,6 +1207,7 @@ const App: React.FC = () => {
   onPurchaseSkipAnytime={handlePurchaseSkipAnytime}
   onPurchaseSportsPack={handlePurchaseSportsPack}
   onPurchaseCinemaPack={handlePurchaseCinemaPack}
+  onPurchaseBundle={handlePurchaseBundle}
   isAdFree={isPremium || !!stats.isAdFree}
   isSkipAnytimePurchased={hasSkipForever || !!stats.isSkipAnytimePurchased}
   isSportsPackPurchased={hasSport || !!stats.isSportsPackPurchased}

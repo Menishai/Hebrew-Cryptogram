@@ -59,6 +59,18 @@ const ShopModal: React.FC<ShopModalProps> = ({
       borderColor: 'border-amber-100'
     },
     { 
+      id: 'hints_20', 
+      productId: 'hints20',
+      title: 'חבילת 20 רמזים', 
+      desc: 'דחיפה קטנה קדימה', 
+      icon: 'fa-lightbulb',
+      price: '₪5.90', 
+      reward: 20, 
+      color: 'text-amber-500',
+      gradient: 'from-amber-50 to-white',
+      borderColor: 'border-amber-100'
+    },
+    { 
       id: 'hints_50', 
       productId: 'hints.50',
       title: 'חבילת 50 רמזים', 
@@ -134,6 +146,19 @@ const ShopModal: React.FC<ShopModalProps> = ({
       gradient: 'from-emerald-50 to-white',
       borderColor: 'border-emerald-100'
     },
+    { 
+      id: 'bundle_all', 
+      productId: 'all.inclusive',
+      title: 'חבילת הכל כלול!', 
+      desc: 'כל התוספות בחנות + 300 רמזים', 
+      icon: 'fa-box-open',
+      price: '₪149.90', 
+      reward: 'special', 
+      color: 'text-fuchsia-600',
+      tag: 'הכי משתלם',
+      gradient: 'from-fuchsia-50 to-white',
+      borderColor: 'border-fuchsia-300'
+    },
   ];
 
   // הלוגיקה שמנהלת את הרכישה בפועל
@@ -156,7 +181,15 @@ const ShopModal: React.FC<ShopModalProps> = ({
 
     // רק אם התשלום באמת עבר (המשתמש לא ביטל והכרטיס תקין)
     if (result.success) {
-      if (isAds) onPurchaseRemoveAds();
+      if (item.productId === 'all.inclusive') {
+        onPurchaseRemoveAds();
+        onPurchaseSkipAnytime();
+        onPurchaseSportsPack();
+        onPurchaseCinemaPack();
+        onPurchaseHints(300);
+        alert("מטורף! כל החנות נפתחה עבורך ונוספו לך 300 רמזים!");
+      }
+      else if (isAds) onPurchaseRemoveAds();
       else if (isSkip) onPurchaseSkipAnytime();
       else if (isSports) onPurchaseSportsPack();
       else if (isCinema) onPurchaseCinemaPack();
