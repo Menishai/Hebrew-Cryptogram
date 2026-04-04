@@ -98,7 +98,7 @@ const GameOverlay: React.FC<GameOverlayProps> = ({
         </div>
 
         {bonusMessage && (
-          <div className="mb-6 bg-amber-50 text-amber-700 px-6 py-3 rounded-2xl font-black text-sm border-2 border-amber-200 animate-bounce flex items-center gap-3">
+          <div className="mb-6 bg-amber-50 text-amber-700 px-6 py-3 rounded-2xl font-black text-sm border-2 border-amber-200 animate-bounce flex items-center gap-3 whitespace-pre-line">
             <i className="fa-solid fa-gift"></i>
             {bonusMessage}
           </div>

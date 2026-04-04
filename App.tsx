@@ -18,8 +18,9 @@ import SplashScreen from './components/SplashScreen';
 import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 import { motion, AnimatePresence } from "framer-motion";
+import { useBilling } from './hooks/useBilling';
 
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.3';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -102,6 +103,7 @@ const checkIfCellIsLocked = (
 };
 
 const App: React.FC = () => {
+  const { isPremium, hasSkipForever, hasSport, hasCinema } = useBilling();
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.HOME);
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
   const [status, setStatus] = useState<GameStatus>(GameStatus.LOADING);
@@ -113,6 +115,7 @@ const App: React.FC = () => {
   const [isHintMode, setIsHintMode] = useState(false);
   const [isLockedHintMode, setIsLockedHintMode] = useState(false);
   const [showHintMenu, setShowHintMenu] = useState(false);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [isUndoConfirmVisible, setIsUndoConfirmVisible] = useState(false);
   const [currentLevelDifficulty, setCurrentLevelDifficulty] = useState<Difficulty>(Difficulty.EASY);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
@@ -508,6 +511,35 @@ const App: React.FC = () => {
           if (newStats.easyWinsCount % 10 === 0) {
             newStats.hintsRemaining += 1;
             setRewardMessage(`נצחון מס' ${newStats.easyWinsCount} ברמה קלה! זכית ב-1 רמז!`);
+          }
+        }
+
+                if (isDaily && levelInfo.dailyDate) {
+          const [yearStr, monthStr, dayStr] = levelInfo.dailyDate.split('-');
+          const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
+          const dayOfWeek = dateObj.getDay();
+          const sunday = new Date(dateObj);
+          sunday.setDate(dateObj.getDate() - dayOfWeek);
+          const weekStartStr = `${sunday.getFullYear()}-${(sunday.getMonth()+1).toString().padStart(2, '0')}-${sunday.getDate().toString().padStart(2, '0')}`;
+          
+          let allWon = true;
+          for (let i = 0; i < 7; i++) {
+            const d = new Date(sunday);
+            d.setDate(sunday.getDate() + i);
+            const dStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+            if (!newStats.dailyProgress || !newStats.dailyProgress[dStr] || newStats.dailyProgress[dStr].status !== 'won') {
+              allWon = false;
+              break;
+            }
+          }
+          
+          if (allWon) {
+            const rewardedWeeks = newStats.rewardedDailyWeeks || [];
+            if (!rewardedWeeks.includes(weekStartStr)) {
+              newStats.rewardedDailyWeeks = [...rewardedWeeks, weekStartStr];
+              newStats.hintsRemaining += 2;
+              setRewardMessage(prevMsg => prevMsg ? `${prevMsg}\nבנוסף, השלמת שבוע שלם בחידון היומי! זכית ב-2 רמזים נוספים!` : "השלמת שבוע שלם בחידון היומי! זכית ב-2 רמזים!");
+            }
           }
         }
 
@@ -1141,18 +1173,18 @@ const App: React.FC = () => {
             {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
             {showShop && (
               <ShopModal 
-                onClose={() => setShowShop(false)} 
-                onPurchaseHints={handlePurchaseHints}
-                onPurchaseRemoveAds={handlePurchaseRemoveAds}
-                onPurchaseSkipAnytime={handlePurchaseSkipAnytime}
-                onPurchaseSportsPack={handlePurchaseSportsPack}
-                onPurchaseCinemaPack={handlePurchaseCinemaPack}
-                isAdFree={!!stats.isAdFree}
-                isSkipAnytimePurchased={!!stats.isSkipAnytimePurchased}
-                isSportsPackPurchased={!!stats.isSportsPackPurchased}
-                isCinemaPackPurchased={!!stats.isCinemaPackPurchased}
-                hintsRemaining={stats.hintsRemaining}
-              />
+  onClose={() => setShowShop(false)} 
+  onPurchaseHints={handlePurchaseHints}
+  onPurchaseRemoveAds={handlePurchaseRemoveAds}
+  onPurchaseSkipAnytime={handlePurchaseSkipAnytime}
+  onPurchaseSportsPack={handlePurchaseSportsPack}
+  onPurchaseCinemaPack={handlePurchaseCinemaPack}
+  isAdFree={isPremium || !!stats.isAdFree}
+  isSkipAnytimePurchased={hasSkipForever || !!stats.isSkipAnytimePurchased}
+  isSportsPackPurchased={hasSport || !!stats.isSportsPackPurchased}
+  isCinemaPackPurchased={hasCinema || !!stats.isCinemaPackPurchased}
+  hintsRemaining={stats.hintsRemaining}
+/>
             )}
             
             {showHintMenu && (
@@ -1165,6 +1197,35 @@ const App: React.FC = () => {
                 hintsRemaining={userState.hintsRemaining}
                 hasLockedCells={hasLockedCells}
               />
+            )}
+
+            {showAuthorModal && levelData && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/40" dir="rtl" onClick={() => {
+                setShowAuthorModal(false);
+                setUserState(prev => ({ ...prev, isAuthorRevealed: true }));
+              }}>
+                <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 text-center" onClick={e => e.stopPropagation()}>
+                  <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+                    <i className="fa-solid fa-user-pen"></i>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 mb-2">מקור המשפט</h3>
+                  <div className="bg-slate-50 p-4 rounded-2xl mb-8 border border-slate-100">
+                    <p className="text-lg font-bold text-slate-700">{levelData.author}</p>
+                    {levelData.year && (
+                      <p className="text-sm font-medium text-slate-500 mt-1">{levelData.year}</p>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setShowAuthorModal(false);
+                      setUserState(prev => ({ ...prev, isAuthorRevealed: true }));
+                    }}
+                    className="w-full py-4 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all"
+                  >
+                    המשך במשחק
+                  </button>
+                </div>
+              </div>
             )}
 
             {isUndoConfirmVisible && (

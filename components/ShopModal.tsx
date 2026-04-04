@@ -1,8 +1,9 @@
-
 import React from 'react';
+import { useBilling } from '../hooks/useBilling'; // <--- ייבוא מערכת הרכישות
 
 interface ShopItem {
   id: string;
+  productId: string; // <--- המזהה האמיתי שהגדרנו בגוגל
   title: string;
   desc: string;
   icon: string;
@@ -41,9 +42,13 @@ const ShopModal: React.FC<ShopModalProps> = ({
   isCinemaPackPurchased,
   hintsRemaining 
 }) => {
+  // מושכים את הפונקציות שלנו מ-RevenueCat
+  const { isReady, packages, buyPackage, restorePurchases } = useBilling();
+
   const items: ShopItem[] = [
     { 
       id: 'hints_10', 
+      productId: 'hints.10', // מזהה גוגל
       title: 'חבילת 10 רמזים', 
       desc: 'עזרה קלה לדרך', 
       icon: 'fa-lightbulb', 
@@ -55,6 +60,7 @@ const ShopModal: React.FC<ShopModalProps> = ({
     },
     { 
       id: 'hints_50', 
+      productId: 'hints.50',
       title: 'חבילת 50 רמזים', 
       desc: 'החבילה המבוקשת ביותר', 
       icon: 'fa-sparkles', 
@@ -66,7 +72,8 @@ const ShopModal: React.FC<ShopModalProps> = ({
       borderColor: 'border-blue-100'
     },
     { 
-      id: 'hints_100', 
+      id: 'hints_100',
+      productId: 'hints.100', 
       title: 'חבילת 100 רמזים', 
       desc: 'לאלופים שרוצים הכל', 
       icon: 'fa-crown', 
@@ -79,6 +86,7 @@ const ShopModal: React.FC<ShopModalProps> = ({
     },
     { 
       id: 'skip_anytime', 
+      productId: 'skip.level',
       title: 'ניתן לדלג בכל זמן', 
       desc: 'דלג על שלב גם אחרי שהתחלת לנחש', 
       icon: 'fa-forward-step', 
@@ -90,6 +98,7 @@ const ShopModal: React.FC<ShopModalProps> = ({
     },
     { 
       id: 'pack_sports', 
+      productId: 'sport.pack',
       title: 'חבילת ספורט', 
       desc: 'ציטוטי ספורט וקלישאות של שדרנים', 
       icon: 'fa-football', 
@@ -102,6 +111,7 @@ const ShopModal: React.FC<ShopModalProps> = ({
     },
     { 
       id: 'pack_cinema', 
+      productId: 'cinema.pack',
       title: 'קולנוע וטלוויזיה', 
       desc: 'סרטי קאלט וסדרות ישראליות', 
       icon: 'fa-film', 
@@ -113,7 +123,8 @@ const ShopModal: React.FC<ShopModalProps> = ({
       borderColor: 'border-rose-200'
     },
     { 
-      id: 'remove_ads', 
+      id: 'remove_ads',
+      productId: 'vip.ads', 
       title: 'גרסת הפרימיום', 
       desc: 'ביטול פרסומות לנצח', 
       icon: 'fa-shield-halved', 
@@ -124,6 +135,34 @@ const ShopModal: React.FC<ShopModalProps> = ({
       borderColor: 'border-emerald-100'
     },
   ];
+
+  // הלוגיקה שמנהלת את הרכישה בפועל
+  const handleBuyItem = async (item: ShopItem, isAds: boolean, isSkip: boolean, isSports: boolean, isCinema: boolean) => {
+    if (!isReady) {
+      alert("החנות מתחברת לשרת, אנא המתן מספר שניות ונסה שוב.");
+      return;
+    }
+
+    // מחפשים את החבילה האמיתית שנמשכה מגוגל פליי
+    const rcPackage = packages.find(p => p.product.identifier === item.productId);
+    
+    if (!rcPackage) {
+      alert("המוצר אינו זמין כרגע בחנות.");
+      return;
+    }
+
+    // פותחים את חלונית התשלום של אנדרואיד
+    const result = await buyPackage(rcPackage);
+
+    // רק אם התשלום באמת עבר (המשתמש לא ביטל והכרטיס תקין)
+    if (result.success) {
+      if (isAds) onPurchaseRemoveAds();
+      else if (isSkip) onPurchaseSkipAnytime();
+      else if (isSports) onPurchaseSportsPack();
+      else if (isCinema) onPurchaseCinemaPack();
+      else onPurchaseHints(item.reward as number);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 backdrop-blur-xl bg-slate-900/60 transition-all duration-500" dir="rtl" onClick={onClose}>
@@ -165,17 +204,15 @@ const ShopModal: React.FC<ShopModalProps> = ({
                              (isSportsItem && isSportsPackPurchased) ||
                              (isCinemaItem && isCinemaPackPurchased);
 
+            // מושך את המחיר האמיתי מהשרת. אם עדיין נטען, מציג את מחיר הגיבוי שכתבת
+            const rcPackage = packages.find(p => p.product.identifier === item.productId);
+            const displayPrice = rcPackage ? rcPackage.product.priceString : item.price;
+
             return (
               <button
                 key={item.id}
                 disabled={disabled}
-                onClick={() => {
-                  if (isAdsItem) onPurchaseRemoveAds();
-                  else if (isSkipItem) onPurchaseSkipAnytime();
-                  else if (isSportsItem) onPurchaseSportsPack();
-                  else if (isCinemaItem) onPurchaseCinemaPack();
-                  else onPurchaseHints(item.reward as number);
-                }}
+                onClick={() => handleBuyItem(item, isAdsItem, isSkipItem, isSportsItem, isCinemaItem)}
                 className={`w-full p-5 rounded-[2rem] border-2 flex items-center gap-4 transition-all text-right relative group overflow-hidden ${
                   disabled 
                     ? 'bg-slate-50 border-slate-100 opacity-60 grayscale cursor-not-allowed' 
@@ -205,7 +242,7 @@ const ShopModal: React.FC<ShopModalProps> = ({
                   ? 'bg-slate-200 text-slate-400 shadow-none' 
                   : 'bg-slate-900 text-white group-hover:bg-blue-600'
                 }`}>
-                  {disabled ? 'בבעלותך' : item.price}
+                  {disabled ? 'בבעלותך' : displayPrice}
                 </div>
               </button>
             );
@@ -213,7 +250,7 @@ const ShopModal: React.FC<ShopModalProps> = ({
         </div>
 
         {/* Footer Area */}
-        <div className="px-8 py-6 bg-slate-50/80 backdrop-blur-md border-t border-slate-100 shrink-0 flex flex-col items-center gap-4">
+        <div className="px-8 py-4 bg-slate-50/80 backdrop-blur-md border-t border-slate-100 shrink-0 flex flex-col items-center gap-3">
           <div className="flex items-center gap-3 bg-white px-6 py-2.5 rounded-full shadow-sm border border-slate-200">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">יתרת רמזים</span>
             <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
@@ -222,10 +259,14 @@ const ShopModal: React.FC<ShopModalProps> = ({
               <i className="fa-solid fa-lightbulb"></i>
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 font-bold text-center leading-relaxed">
-            לתשומת לבך: הרכישות הן לצורכי המחשה בלבד.<br/>
-            <span className="opacity-60">לא יתבצע חיוב כספי אמיתי בחשבונך.</span>
-          </p>
+          
+          {/* כפתור שחזור רכישות למשתמשים שהחליפו טלפון */}
+          <button 
+            onClick={restorePurchases} 
+            className="text-[12px] text-slate-500 hover:text-blue-600 font-bold underline transition-colors"
+          >
+            החלפת מכשיר? שחזר רכישות קודמות
+          </button>
         </div>
       </div>
       

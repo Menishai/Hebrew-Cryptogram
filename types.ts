@@ -61,6 +61,7 @@ export interface Statistics {
   isCinemaPackPurchased?: boolean;
   // Daily Quiz Tracking: Record<"YYYY-MM-DD", DailyDayStats>
   dailyProgress?: Record<string, DailyDayStats>;
+  rewardedDailyWeeks?: string[];
 }
 
 export interface GameLevel {
