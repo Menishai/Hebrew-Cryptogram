@@ -52,6 +52,17 @@ export interface Statistics {
   careerBestStreak: number;
   // Achievement tracking
   claimedAchievements: string[];
+
+    // New Achievement Tracking
+  winsWithoutHints?: number;
+  bestDailyStreak?: number;
+  currentDailyStreak?: number;
+  lastDailyWinDate?: string;
+  winsByCategory?: Record<string, number>;
+  bestMarathon?: number;
+  lastPlayedDate?: string;
+  gamesWonToday?: number;
+
   // Advanced tracking
   totalMistakes: number;
   // Purchases
@@ -88,6 +99,7 @@ export interface UserState {
   currentLevel: number;
   isAuthorRevealed: boolean;
   hintRevealedIndices: number[]; // Tracks which letters were solved via hints
+  hintsUsedThisLevel?: number;
 }
 
 export enum GameStatus {

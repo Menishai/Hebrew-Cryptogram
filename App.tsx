@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.4.3';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -280,7 +280,8 @@ const App: React.FC = () => {
     cellFeedback: {},
     currentLevel: stats.currentLevel || 1,
     isAuthorRevealed: false,
-    hintRevealedIndices: []
+    hintRevealedIndices: [],
+    hintsUsedThisLevel: 0
   });
 
   const persistStatsTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -466,29 +467,72 @@ const App: React.FC = () => {
       { id: 'streak_15', achieved: stats.careerBestStreak >= 15 },
       { id: 'streak_30', achieved: stats.careerBestStreak >= 30 },
       { id: 'streak_50', achieved: stats.careerBestStreak >= 50 },
+            
+      { id: 'daily_streak_3', achieved: (stats.bestDailyStreak || 0) >= 3 },
+      { id: 'daily_streak_7', achieved: (stats.bestDailyStreak || 0) >= 7 },
+      { id: 'daily_streak_14', achieved: (stats.bestDailyStreak || 0) >= 14 },
+      { id: 'daily_streak_30', achieved: (stats.bestDailyStreak || 0) >= 30 },
+      
+      { id: 'no_hints_10', achieved: (stats.winsWithoutHints || 0) >= 10 },
+      { id: 'no_hints_20', achieved: (stats.winsWithoutHints || 0) >= 20 },
+      { id: 'no_hints_50', achieved: (stats.winsWithoutHints || 0) >= 50 },
+      { id: 'no_hints_100', achieved: (stats.winsWithoutHints || 0) >= 100 },
+      
+      { id: 'marathon_5', achieved: (stats.bestMarathon || 0) >= 5 },
+      { id: 'marathon_10', achieved: (stats.bestMarathon || 0) >= 10 },
+      { id: 'marathon_20', achieved: (stats.bestMarathon || 0) >= 20 },
+      
       { id: 'level_10', achieved: (stats.currentLevel - 1) >= 10 },
       { id: 'level_25', achieved: (stats.currentLevel - 1) >= 25 },
       { id: 'level_50', achieved: (stats.currentLevel - 1) >= 50 },
       { id: 'level_100', achieved: (stats.currentLevel - 1) >= 100 },
       { id: 'level_250', achieved: (stats.currentLevel - 1) >= 250 },
+
       { id: 'perfect_1', achieved: (stats.careerPerfectGames || 0) >= 1 },
       { id: 'perfect_5', achieved: (stats.careerPerfectGames || 0) >= 5 },
       { id: 'perfect_20', achieved: (stats.careerPerfectGames || 0) >= 20 },
       { id: 'perfect_50', achieved: (stats.careerPerfectGames || 0) >= 50 },
       { id: 'perfect_100', achieved: (stats.careerPerfectGames || 0) >= 100 },
+
       { id: 'total_10', achieved: stats.careerWins >= 10 },
       { id: 'total_25', achieved: stats.careerWins >= 25 },
       { id: 'total_50', achieved: stats.careerWins >= 50 },
       { id: 'total_100', achieved: stats.careerWins >= 100 },
       { id: 'total_250', achieved: stats.careerWins >= 250 },
+
       { id: 'diff_5', achieved: challengeWins >= 5 },
       { id: 'diff_15', achieved: challengeWins >= 15 },
       { id: 'diff_30', achieved: challengeWins >= 30 },
       { id: 'diff_60', achieved: challengeWins >= 60 },
+
       { id: 'coll_5', achieved: uniqueAuthorsCount >= 5 },
       { id: 'coll_15', achieved: uniqueAuthorsCount >= 15 },
       { id: 'coll_40', achieved: uniqueAuthorsCount >= 40 },
       { id: 'coll_80', achieved: uniqueAuthorsCount >= 80 },
+
+      { id: 'genre_proverb_10', achieved: (stats.winsByCategory?.['proverb'] || 0) >= 10 },
+      { id: 'genre_proverb_25', achieved: (stats.winsByCategory?.['proverb'] || 0) >= 25 },
+      { id: 'genre_proverb_50', achieved: (stats.winsByCategory?.['proverb'] || 0) >= 50 },
+      
+      { id: 'genre_song_10', achieved: (stats.winsByCategory?.['song'] || 0) >= 10 },
+      { id: 'genre_song_25', achieved: (stats.winsByCategory?.['song'] || 0) >= 25 },
+      { id: 'genre_song_50', achieved: (stats.winsByCategory?.['song'] || 0) >= 50 },
+      
+      { id: 'genre_source_10', achieved: (stats.winsByCategory?.['source'] || 0) >= 10 },
+      { id: 'genre_source_25', achieved: (stats.winsByCategory?.['source'] || 0) >= 25 },
+      { id: 'genre_source_50', achieved: (stats.winsByCategory?.['source'] || 0) >= 50 },
+      
+      { id: 'genre_famous_10', achieved: (stats.winsByCategory?.['famous'] || 0) >= 10 },
+      { id: 'genre_famous_25', achieved: (stats.winsByCategory?.['famous'] || 0) >= 25 },
+      { id: 'genre_famous_50', achieved: (stats.winsByCategory?.['famous'] || 0) >= 50 },
+      
+      { id: 'genre_sports_10', achieved: (stats.winsByCategory?.['sports'] || 0) >= 10 },
+      { id: 'genre_sports_25', achieved: (stats.winsByCategory?.['sports'] || 0) >= 25 },
+      { id: 'genre_sports_50', achieved: (stats.winsByCategory?.['sports'] || 0) >= 50 },
+      
+      { id: 'genre_cinema_10', achieved: (stats.winsByCategory?.['cinema'] || 0) >= 10 },
+      { id: 'genre_cinema_25', achieved: (stats.winsByCategory?.['cinema'] || 0) >= 25 },
+      { id: 'genre_cinema_50', achieved: (stats.winsByCategory?.['cinema'] || 0) >= 50 },
     ];
     return milestones.some(m => m.achieved && !stats.claimedAchievements.includes(m.id));
   }, [stats]);
@@ -514,13 +558,14 @@ const App: React.FC = () => {
     return Math.max(0, 3 - used);
   }, [levelData, stats.dailyProgress]);
 
-  const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0) => {
+  const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0, hintsUsedThisLevel: number = 0) => {
     setStats(prev => {
       const newStats = { ...prev };
       newStats.gamesPlayed += 1;
       newStats.totalMistakes += mistakesCount;
       
       const isDaily = !!levelInfo.isDaily;
+      const todayStr = new Date().toISOString().split('T')[0];
 
       if (isDaily && levelInfo.dailyDate) {
         const dp = { ...(newStats.dailyProgress || {}) };
@@ -544,6 +589,28 @@ const App: React.FC = () => {
         newStats.currentStreak += 1;
         newStats.bestStreak = Math.max(newStats.bestStreak, newStats.currentStreak);
         
+        // Marathon Tracking
+        if (newStats.lastPlayedDate === todayStr) {
+          newStats.gamesWonToday = (newStats.gamesWonToday || 0) + 1;
+        } else {
+          newStats.lastPlayedDate = todayStr;
+          newStats.gamesWonToday = 1;
+        }
+        newStats.bestMarathon = Math.max(newStats.bestMarathon || 0, newStats.gamesWonToday);
+
+        // No Hints Tracking
+        if (hintsUsedThisLevel === 0) {
+          newStats.winsWithoutHints = (newStats.winsWithoutHints || 0) + 1;
+        }
+
+        // Genre Tracking
+        if (!isDaily && levelInfo.category) {
+          newStats.winsByCategory = {
+            ...(newStats.winsByCategory || {}),
+            [levelInfo.category]: (newStats.winsByCategory?.[levelInfo.category] || 0) + 1
+          };
+        }
+
         if (difficulty === Difficulty.VERY_HARD) {
           newStats.veryHardWinsCount += 1;
           newStats.hintsRemaining += 1;
@@ -569,6 +636,24 @@ const App: React.FC = () => {
         }
 
                 if (isDaily && levelInfo.dailyDate) {
+                // Daily Streak Tracking
+          if (newStats.lastDailyWinDate) {
+            const lastWin = new Date(newStats.lastDailyWinDate);
+            const currentWin = new Date(levelInfo.dailyDate);
+            const diffTime = Math.abs(currentWin.getTime() - lastWin.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+              newStats.currentDailyStreak = (newStats.currentDailyStreak || 0) + 1;
+            } else if (diffDays > 1) {
+              newStats.currentDailyStreak = 1;
+            }
+          } else {
+            newStats.currentDailyStreak = 1;
+          }
+          newStats.lastDailyWinDate = levelInfo.dailyDate;
+          newStats.bestDailyStreak = Math.max(newStats.bestDailyStreak || 0, newStats.currentDailyStreak);
+
           const [yearStr, monthStr, dayStr] = levelInfo.dailyDate.split('-');
           const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
           const dayOfWeek = dateObj.getDay();
@@ -769,7 +854,8 @@ const App: React.FC = () => {
       cellFeedback: {},
       currentLevel: stats.currentLevel || 1,
       isAuthorRevealed: false,
-      hintRevealedIndices: []
+      hintRevealedIndices: [],
+      hintsUsedThisLevel: 0
     };
 
     setUserState(initialUserState);
@@ -976,13 +1062,20 @@ const handleRevealAuthorOption = useCallback(() => {
     if (isWin) {
       setTimeout(() => {
         setStatus(GameStatus.WON);
-        updateStats(true, levelData, currentLevelDifficulty, userState.mistakes);
+        updateStats(true, levelData, currentLevelDifficulty, userState.mistakes, userState.hintsUsedThisLevel);
         playSound('win');
       }, 300);
     }
     
-    setUserState(prev => ({ ...prev, hintsRemaining: newHints, cellGuesses: newGuesses, cellFeedback: newFeedback, hintRevealedIndices: newHintRevealed }));
-    
+    setUserState(prev => ({ 
+      ...prev, 
+      hintsRemaining: newHints, 
+      cellGuesses: newGuesses, 
+      cellFeedback: newFeedback, 
+      hintRevealedIndices: newHintRevealed,
+      hintsUsedThisLevel: (prev.hintsUsedThisLevel || 0) + 1
+    }));
+
     setIsHintMode(false);
     setIsLockedHintMode(false);
     setTimeout(() => {
@@ -1140,7 +1233,7 @@ const handleRevealAuthorOption = useCallback(() => {
       if (isWin) { 
         setTimeout(() => {
           setStatus(GameStatus.WON); 
-          updateStats(true, levelData, currentLevelDifficulty, userState.mistakes); 
+          updateStats(true, levelData, currentLevelDifficulty, userState.mistakes, userState.hintsUsedThisLevel); 
           playSound('win'); 
         }, 300);
         

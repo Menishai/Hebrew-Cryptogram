@@ -107,13 +107,6 @@ const HintModal: React.FC<HintModalProps> = ({
           {isAuthorRevealed && <i className="fa-solid fa-check text-green-500 ml-2"></i>}
         </button>
 
-        <button 
-          onClick={onCancel}
-          className="mt-2 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-colors"
-        >
-          ביטול
-        </button>
-
         {/* כפתור צפייה בוידאו לקבלת רמז (מופיע רק כשיש פרסומת מוכנה) */}
         {isAdReady && onWatchAd && (
           <button 
@@ -134,6 +127,12 @@ const HintModal: React.FC<HintModalProps> = ({
             </div>
           </button>
         )}
+                <button 
+          onClick={onCancel}
+          className="mt-2 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-colors"
+        >
+          ביטול
+        </button>
 
       </div>
     </div>

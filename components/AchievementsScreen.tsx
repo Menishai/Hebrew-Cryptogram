@@ -27,6 +27,8 @@ interface AchievementsScreenProps {
 
 const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, onClaim }) => {
   const [animatingId, setAnimatingId] = useState<string | null>(null);
+  
+  const [isGenresExpanded, setIsGenresExpanded] = useState(false);
 
   const uniqueAuthorsCount = useMemo(() => {
     const authors = new Set(stats.usedQuotes.map(q => q.author));
@@ -47,6 +49,47 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
         { id: 'streak_15', label: 'זהב', target: 15, reward: 1 },
         { id: 'streak_30', label: 'פלטינה', target: 30, reward: 1 },
         { id: 'streak_50', label: 'יהלום', target: 50, reward: 1 },
+      ]
+    },
+        {
+      id: 'daily_streak',
+      title: 'המתמיד היומי',
+      icon: 'fa-calendar-check',
+      color: 'text-teal-600',
+      bg: 'bg-teal-50',
+      currentValue: stats.bestDailyStreak || 0,
+      tiers: [
+        { id: 'daily_streak_3', label: 'ארד', target: 3, reward: 1 },
+        { id: 'daily_streak_7', label: 'כסף', target: 7, reward: 1 },
+        { id: 'daily_streak_14', label: 'זהב', target: 14, reward: 1 },
+        { id: 'daily_streak_30', label: 'פלטינה', target: 30, reward: 1 },
+      ]
+    },
+    {
+      id: 'no_hints',
+      title: 'מוח עצמאי',
+      icon: 'fa-brain',
+      color: 'text-purple-600',
+      bg: 'bg-purple-50',
+      currentValue: stats.winsWithoutHints || 0,
+      tiers: [
+        { id: 'no_hints_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'no_hints_20', label: 'כסף', target: 20, reward: 1 },
+        { id: 'no_hints_50', label: 'זהב', target: 50, reward: 1 },
+        { id: 'no_hints_100', label: 'פלטינה', target: 100, reward: 1 },
+      ]
+    },
+    {
+      id: 'marathon',
+      title: 'מרתון',
+      icon: 'fa-person-running',
+      color: 'text-red-600',
+      bg: 'bg-red-50',
+      currentValue: stats.bestMarathon || 0,
+      tiers: [
+        { id: 'marathon_5', label: 'ארד', target: 5, reward: 1 },
+        { id: 'marathon_10', label: 'כסף', target: 10, reward: 1 },
+        { id: 'marathon_20', label: 'זהב', target: 20, reward: 1 },
       ]
     },
     {
@@ -123,6 +166,87 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
       ]
     }
   ];
+  
+  const genreCategories: AchievementCategory[] = [
+    {
+      id: 'genre_proverb',
+      title: 'חובב פתגמים',
+      icon: 'fa-comment-dots',
+      color: 'text-sky-600',
+      bg: 'bg-sky-50',
+      currentValue: stats.winsByCategory?.['proverb'] || 0,
+      tiers: [
+        { id: 'genre_proverb_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'genre_proverb_25', label: 'כסף', target: 25, reward: 1 },
+        { id: 'genre_proverb_50', label: 'זהב', target: 50, reward: 1 },
+      ]
+    },
+    {
+      id: 'genre_song',
+      title: 'חובב שירים',
+      icon: 'fa-music',
+      color: 'text-pink-600',
+      bg: 'bg-pink-50',
+      currentValue: stats.winsByCategory?.['song'] || 0,
+      tiers: [
+        { id: 'genre_song_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'genre_song_25', label: 'כסף', target: 25, reward: 1 },
+        { id: 'genre_song_50', label: 'זהב', target: 50, reward: 1 },
+      ]
+    },
+    {
+      id: 'genre_source',
+      title: 'חובב מקורות',
+      icon: 'fa-scroll',
+      color: 'text-yellow-600',
+      bg: 'bg-yellow-50',
+      currentValue: stats.winsByCategory?.['source'] || 0,
+      tiers: [
+        { id: 'genre_source_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'genre_source_25', label: 'כסף', target: 25, reward: 1 },
+        { id: 'genre_source_50', label: 'זהב', target: 50, reward: 1 },
+      ]
+    },
+    {
+      id: 'genre_famous',
+      title: 'חובב ציטוטים מפורסמים',
+      icon: 'fa-quote-right',
+      color: 'text-fuchsia-600',
+      bg: 'bg-fuchsia-50',
+      currentValue: stats.winsByCategory?.['famous'] || 0,
+      tiers: [
+        { id: 'genre_famous_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'genre_famous_25', label: 'כסף', target: 25, reward: 1 },
+        { id: 'genre_famous_50', label: 'זהב', target: 50, reward: 1 },
+      ]
+    },
+    {
+      id: 'genre_sports',
+      title: 'חובב ספורט',
+      icon: 'fa-basketball',
+      color: 'text-orange-500',
+      bg: 'bg-orange-50',
+      currentValue: stats.winsByCategory?.['sports'] || 0,
+      tiers: [
+        { id: 'genre_sports_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'genre_sports_25', label: 'כסף', target: 25, reward: 1 },
+        { id: 'genre_sports_50', label: 'זהב', target: 50, reward: 1 },
+      ]
+    },
+    {
+      id: 'genre_cinema',
+      title: 'חובב קולנוע',
+      icon: 'fa-film',
+      color: 'text-purple-500',
+      bg: 'bg-purple-50',
+      currentValue: stats.winsByCategory?.['cinema'] || 0,
+      tiers: [
+        { id: 'genre_cinema_10', label: 'ארד', target: 10, reward: 1 },
+        { id: 'genre_cinema_25', label: 'כסף', target: 25, reward: 1 },
+        { id: 'genre_cinema_50', label: 'זהב', target: 50, reward: 1 },
+      ]
+    }
+  ];
 
   const handleClaimClick = (id: string) => {
     setAnimatingId(id);
@@ -145,8 +269,14 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
   };
 
   const getAchievementDescription = (categoryId: string, target: number) => {
+        if (categoryId.startsWith('genre_')) {
+      return `נצח ${target} משחקים בקטגוריה זו`;
+    }
     switch (categoryId) {
       case 'streak': return `השלם ${target} משחקים ברצף ללא הפסד`;
+      case 'daily_streak': return `פתור את החידון היומי ${target} ימים ברצף`;
+      case 'no_hints': return `נצח ${target} משחקים ללא שימוש ברמזים כלל`;
+      case 'marathon': return `נצח ${target} משחקים באותו היום`;
       case 'level': return `הגע לשלב ${target} במשחק`;
       case 'perfect': return `נצח ${target} משחקים ללא טעויות כלל`;
       case 'total_wins': return `צבור ${target} ניצחונות בסך הכל`;
@@ -256,6 +386,103 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
             </div>
           </div>
         ))}
+        
+        {/* Collapsible Genres Section */}
+        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+          <button 
+            onClick={() => setIsGenresExpanded(!isGenresExpanded)}
+            className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-slate-100 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl border bg-indigo-50 text-indigo-600 border-slate-100">
+                <i className="fa-solid fa-layer-group"></i>
+              </div>
+              <div className="text-right">
+                <h3 className="font-black text-slate-800 text-base">חובב ז'אנרים</h3>
+                <div className="text-sm text-slate-600 font-bold">הישגים לפי קטגוריות</div>
+              </div>
+            </div>
+            <i className={`fa-solid fa-chevron-down text-slate-400 transition-transform duration-300 ${isGenresExpanded ? 'rotate-180' : ''}`}></i>
+          </button>
+          
+          {isGenresExpanded && (
+            <div className="p-5 border-t border-slate-100 space-y-6 bg-white">
+              {genreCategories.map((cat) => (
+                <div key={cat.id} className="relative">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm border ${cat.bg} ${cat.color} border-slate-100`}>
+                      <i className={`fa-solid ${cat.icon}`}></i>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{cat.title}</h4>
+                      <div className="text-xs text-slate-500 font-bold">
+                        שיא: <span className={`${cat.color}`}>{cat.currentValue}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start justify-between relative px-2">
+                    <div className="absolute top-5 left-6 right-6 h-0.5 bg-slate-100 -z-0"></div>
+                    
+                    {cat.tiers.map((tier, tIdx) => {
+                      const isAchieved = cat.currentValue >= tier.target;
+                      const isClaimed = stats.claimedAchievements.includes(tier.id);
+                      const canClaim = isAchieved && !isClaimed;
+                      const isAnimating = animatingId === tier.id;
+                      
+                      return (
+                        <div 
+                          key={tier.id}
+                          className="flex flex-col items-center gap-2 z-10 relative group"
+                          onClick={() => canClaim && handleClaimClick(tier.id)}
+                        >
+                          <div className="absolute bottom-full mb-2 hidden group-hover:block z-20 w-32 bg-slate-800 text-white text-xs rounded-lg p-2 text-center shadow-lg pointer-events-none transition-opacity duration-200 opacity-0 group-hover:opacity-100">
+                            <div className="font-bold mb-1">{tier.label}</div>
+                            <div>{getAchievementDescription(cat.id, tier.target)}</div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                          </div>
+
+                          <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 relative ${
+                            getTierIconStyle(tIdx, isAchieved, isClaimed)
+                          } ${canClaim ? 'animate-bounce cursor-pointer shadow-lg ring-4 ring-amber-100' : ''} ${isAnimating ? 'animate-claim-pop' : ''}`}>
+                            
+                            {isClaimed ? (
+                              <i className="fa-solid fa-check text-sm"></i>
+                            ) : (
+                              <span className="text-xs font-black">{tier.label[0]}</span>
+                            )}
+
+                            {!isClaimed && isAchieved && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px] animate-pulse border-2 border-white shadow-sm">
+                                <i className="fa-solid fa-lightbulb"></i>
+                              </div>
+                            )}
+
+                            {isAnimating && (
+                              <div className="absolute -top-10 flex items-center justify-center pointer-events-none w-16">
+                                <div className="bg-amber-500 text-white rounded-full px-2 py-0.5 text-[11px] font-black animate-float-hint shadow-xl flex items-center gap-1">
+                                  <span>+1</span>
+                                  <i className="fa-solid fa-lightbulb"></i>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col items-center">
+                            <span className={`text-[11px] font-black ${isAchieved ? 'text-slate-800' : 'text-slate-400'}`}>
+                              {tier.target}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {cat !== genreCategories[genreCategories.length - 1] && <div className="h-px bg-slate-100 mt-6"></div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="text-center pt-8 opacity-70 text-sm font-bold text-slate-700 uppercase tracking-widest pb-8">
            הישגים מזכים ברמזים לצמיתות
