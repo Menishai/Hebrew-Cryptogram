@@ -6,12 +6,13 @@ interface DailyQuizCalendarProps {
   onBack: () => void;
   onSelectDate: (dateStr: string) => void;
   dailyProgress: Record<string, DailyDayStats>;
+  initialMonth?: number;
 }
 
-const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress }) => {
+const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress, initialMonth }) => {
   const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3
-  const initialMonth = Math.max(1, Math.min(3, currentRealMonth));
-  const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
+  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(3, currentRealMonth));
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [lockedDateSelected, setLockedDateSelected] = useState<boolean>(false);
   const [timeToNextQuiz, setTimeToNextQuiz] = useState<string>('');
 

@@ -19,8 +19,9 @@ import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
+import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.3.2';
+const APP_VERSION = '1.4.2';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -103,6 +104,25 @@ const checkIfCellIsLocked = (
 };
 
 const App: React.FC = () => {
+  // --- בלוק צפייה בוידאו ---
+  const handleRewardEarned = useCallback(() => {
+    setUserState(prev => ({
+      ...prev,
+      hintsRemaining: prev.hintsRemaining + 1
+    }));
+
+    setStats(prev => {
+      const newStats = { ...prev, hintsRemaining: prev.hintsRemaining + 1 };
+      if (typeof persistStats === 'function') {
+        persistStats(newStats); 
+      }
+      return newStats;
+    });
+
+    alert("תודה שצפית! זכית ברמז 1 במתנה.");
+  }, []);
+
+  const { isAdReady, showAd } = useRewardedAd(handleRewardEarned);
   const { isPremium, hasSkipForever, hasSport, hasCinema } = useBilling();
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.HOME);
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
@@ -263,13 +283,22 @@ const App: React.FC = () => {
     hintRevealedIndices: []
   });
 
-  const persistStats = (newStats: Statistics) => {
-    localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(newStats));
-  };
+  const persistStatsTimeout = useRef<NodeJS.Timeout | null>(null);
+  const persistGameStateTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const persistGameState = (data: { levelData: GameLevel, userState: UserState, difficulty: Difficulty, history: UserState[] }) => {
-    localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(data));
-  };
+  const persistStats = useCallback((newStats: Statistics) => {
+    if (persistStatsTimeout.current) clearTimeout(persistStatsTimeout.current);
+    persistStatsTimeout.current = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(newStats));
+    }, 500);
+  }, []);
+
+  const persistGameState = useCallback((data: { levelData: GameLevel, userState: UserState, difficulty: Difficulty, history: UserState[] }) => {
+    if (persistGameStateTimeout.current) clearTimeout(persistGameStateTimeout.current);
+    persistGameStateTimeout.current = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(data));
+    }, 500);
+  }, []);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DIFFICULTY, difficultySetting); }, [difficultySetting]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize); }, [fontSize]);
@@ -862,12 +891,14 @@ const App: React.FC = () => {
     setIsLockedHintMode(false);
   }, []);
 
-  const handleRevealAuthorOption = useCallback(() => {
-    setShowHintMenu(false);
+const handleRevealAuthorOption = useCallback(() => {
+    setShowHintMenu(false); // מעלימים את תפריט הרמזים
     if (userState.isAuthorRevealed || userState.hintsRemaining <= 0) return;
     
     playSound('hint');
     const newHints = userState.hintsRemaining - 1;
+    
+    // מעדכנים את כמות הרמזים (אבל עדיין לא חושפים את המחבר במשחק עצמו!)
     setStats(s => {
       const n = { ...s, hintsRemaining: newHints };
       persistStats(n);
@@ -875,9 +906,15 @@ const App: React.FC = () => {
     });
     setUserState(prev => ({
       ...prev,
-      isAuthorRevealed: true,
       hintsRemaining: newHints
     }));
+
+    // הפתרון ל-Ghost Click באנדרואיד: משהים ממש מעט את פתיחת החלונית 
+    // כדי שאירוע הלחיצה יסתיים ולא יסגור אותה מיד
+    setTimeout(() => {
+      setShowAuthorModal(true);
+    }, 50);
+    
     resetIdleTimer();
   }, [userState.isAuthorRevealed, userState.hintsRemaining, playSound, resetIdleTimer]);
 
@@ -1181,13 +1218,12 @@ const App: React.FC = () => {
     }
   };
 
-  const hasSavedGame = !!localStorage.getItem(STORAGE_KEYS.GAME_STATE);
+// Only check for saved game when on the home screen to avoid blocking the main thread during gameplay
+  const hasSavedGame = currentScreen === Screen.HOME ? !!localStorage.getItem(STORAGE_KEYS.GAME_STATE) : false;
 
   return (
 <div 
-  className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative select-none" 
-  dir="rtl"
-  style={{ paddingTop: 'max(env(safe-area-inset-top), 35px)' }}>
+  className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative select-none" dir="rtl" style={{ paddingTop: 'max(env(safe-area-inset-top), 35px)' }}>
         <AnimatePresence mode="wait">
         {isSplashVisible ? (
           <SplashScreen key="splash" onComplete={() => setIsSplashVisible(false)} />
@@ -1197,6 +1233,7 @@ const App: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex flex-col h-full w-full absolute inset-0"
+            style={{ paddingTop: 'max(env(safe-area-inset-top), 45px)' }}
           >
             {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
             {showShop && (
@@ -1216,7 +1253,7 @@ const App: React.FC = () => {
 />
             )}
             
-            {showHintMenu && (
+{showHintMenu && (
               <HintModal 
                 onRevealLetter={handleRevealLetterOption} 
                 onRevealAuthor={handleRevealAuthorOption} 
@@ -1225,6 +1262,11 @@ const App: React.FC = () => {
                 isAuthorRevealed={userState.isAuthorRevealed}
                 hintsRemaining={userState.hintsRemaining}
                 hasLockedCells={hasLockedCells}
+                isAdReady={isAdReady}
+                onWatchAd={() => {
+                  setShowHintMenu(false);
+                  showAd();
+                }}
               />
             )}
 
@@ -1317,7 +1359,12 @@ const App: React.FC = () => {
             ) : currentScreen === Screen.STATS ? (
               <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
             ) : currentScreen === Screen.DAILY_QUIZ ? (
-              <DailyQuizCalendar dailyProgress={stats.dailyProgress || {}} onBack={() => setCurrentScreen(Screen.HOME)} onSelectDate={startDailyGame} />
+              <DailyQuizCalendar 
+                dailyProgress={stats.dailyProgress || {}} 
+                onBack={() => setCurrentScreen(Screen.HOME)} 
+                onSelectDate={startDailyGame} 
+                initialMonth={levelData?.isDaily && levelData.dailyDate ? parseInt(levelData.dailyDate.split('-')[1], 10) - 1 : undefined}
+              />
             ) : currentScreen === Screen.SETTINGS ? (
               <SettingsScreen 
                 difficulty={difficultySetting} 
