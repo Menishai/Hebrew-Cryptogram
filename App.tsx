@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.4.6';
+const APP_VERSION = '1.4.85';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -104,25 +104,7 @@ const checkIfCellIsLocked = (
 };
 
 const App: React.FC = () => {
-  // --- בלוק צפייה בוידאו ---
-  const handleRewardEarned = useCallback(() => {
-    setUserState(prev => ({
-      ...prev,
-      hintsRemaining: prev.hintsRemaining + 1
-    }));
 
-    setStats(prev => {
-      const newStats = { ...prev, hintsRemaining: prev.hintsRemaining + 1 };
-      if (typeof persistStats === 'function') {
-        persistStats(newStats); 
-      }
-      return newStats;
-    });
-
-    alert("תודה שצפית! זכית ברמז 1 במתנה.");
-  }, []);
-
-  const { isAdReady, showAd } = useRewardedAd(handleRewardEarned);
   const { isPremium, hasSkipForever, hasSport, hasCinema } = useBilling();
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.HOME);
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
@@ -140,6 +122,7 @@ const App: React.FC = () => {
   const [currentLevelDifficulty, setCurrentLevelDifficulty] = useState<Difficulty>(Difficulty.EASY);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
   const [reportToast, setReportToast] = useState(false);
+  const [rewardToast, setRewardToast] = useState(false);
   const [packExhaustedToast, setPackExhaustedToast] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const idleTimerRef = useRef<number | null>(null);
@@ -300,6 +283,31 @@ const App: React.FC = () => {
       localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(data));
     }, 500);
   }, []);
+
+  // בלוק הוידאו!
+  const handleRewardEarned = useCallback(() => {
+    setUserState(prev => ({
+      ...prev,
+      hintsRemaining: prev.hintsRemaining + 1
+    }));
+
+    setStats(prev => {
+      const newStats = { ...prev, hintsRemaining: prev.hintsRemaining + 1 };
+      if (typeof persistStats === 'function') {
+        persistStats(newStats); 
+      }
+      return newStats;
+    });
+
+    setTimeout(() => {
+      setRewardToast(true);
+      playSound('win');
+      setTimeout(() => setRewardToast(false), 3500); 
+    }, 500);
+  }, [playSound]); 
+
+  const { isAdReady, showAd } = useRewardedAd(handleRewardEarned);
+  // ==========================================
 
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DIFFICULTY, difficultySetting); }, [difficultySetting]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize); }, [fontSize]);
@@ -1422,6 +1430,33 @@ const handleRevealAuthorOption = useCallback(() => {
               <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl font-black text-sm animate-in slide-in-from-top flex items-center gap-3">
                 <i className="fa-solid fa-envelope text-emerald-400"></i>
                 אפליקציית המייל נפתחה לדיווח. תודה!
+              </div>
+            )}
+
+{rewardToast && (
+              <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-[200] bg-gradient-to-r from-sky-400 to-blue-500 text-white pl-3 pr-6 py-3 rounded-full shadow-2xl font-black text-sm md:text-base animate-in zoom-in fade-in duration-300 flex items-center gap-3 border-2 border-white/30 whitespace-nowrap">
+                
+                {/* אייקון מתנה */}
+                <div className="bg-white/20 p-1.5 rounded-full flex items-center justify-center">
+                  <i className="fa-solid fa-gift text-yellow-300 text-lg"></i>
+                </div>
+                
+                {/* טקסט ואייקון נורה */}
+                <span>תודה שצפית! זכית ברמז 1 במתנה</span>
+                <i className="fa-solid fa-lightbulb text-yellow-100 mr-1"></i>
+
+                {/* קו הפרדה עדין */}
+                <div className="w-px h-6 bg-white/30 mx-1"></div>
+
+                {/* כפתור סגירה X */}
+                <button 
+                  onClick={() => setRewardToast(false)}
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="סגור הודעה"
+                >
+                  <i className="fa-solid fa-xmark text-sm"></i>
+                </button>
+                
               </div>
             )}
 

@@ -107,26 +107,28 @@ const HintModal: React.FC<HintModalProps> = ({
           {isAuthorRevealed && <i className="fa-solid fa-check text-green-500 ml-2"></i>}
         </button>
 
-        {/* כפתור צפייה בוידאו לקבלת רמז (מופיע רק כשיש פרסומת מוכנה) */}
-        {isAdReady && onWatchAd && (
-          <button 
-            onClick={onWatchAd}
-            className="w-full mt-4 flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-2xl transition-colors border-2 border-purple-200"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500 text-white rounded-full flex items-center justify-center text-lg shadow-md">
-                <i className="fa-solid fa-play"></i>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-slate-700">צפה בוידאו</div>
-                <div className="text-sm text-slate-500">וקבל רמז 1 במתנה</div>
-              </div>
-            </div>
-            <div className="font-black text-purple-600 bg-purple-100 px-3 py-1 rounded-full text-sm">
-              חינם
-            </div>
-          </button>
-        )}
+        {/* שים לב שהורדנו את התנאי שמעלים את הכפתור, הוא תמיד מופיע! */}
+        <button 
+          onClick={showAd}
+          disabled={!isAdReady} // <--- נועל את הכפתור אם הפרסומת לא מוכנה
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all duration-300 ${
+            isAdReady 
+              ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-md cursor-pointer' // עיצוב כשהוא מוכן
+              : 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-70' // עיצוב כשהוא נטען
+          }`}
+        >
+          {isAdReady ? (
+            <>
+              <i className="fa-solid fa-video"></i>
+              <span>צפה בוידאו וקבל רמז 1</span>
+            </>
+          ) : (
+            <>
+              <i className="fa-solid fa-spinner fa-spin"></i> {/* אייקון מסתובב של טעינה */}
+              <span>מכין סרטון...</span>
+            </>
+          )}
+        </button>
                 <button 
           onClick={onCancel}
           className="mt-2 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-colors"
