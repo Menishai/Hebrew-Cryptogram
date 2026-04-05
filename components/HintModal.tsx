@@ -9,8 +9,9 @@ interface HintModalProps {
   isAuthorRevealed: boolean;
   hintsRemaining: number;
   hasLockedCells: boolean;
-  isAdReady?: boolean;
   onWatchAd?: () => void;
+  isAdReady: boolean;
+  showAd: () => Promise<void>;
 }
 
 const HintModal: React.FC<HintModalProps> = ({ 
@@ -22,7 +23,8 @@ const HintModal: React.FC<HintModalProps> = ({
   hintsRemaining,
   hasLockedCells,
   isAdReady,
-  onWatchAd
+  onWatchAd,
+  showAd
 }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 backdrop-blur-sm bg-black/20" onClick={onCancel} dir="rtl">
@@ -125,7 +127,7 @@ const HintModal: React.FC<HintModalProps> = ({
           ) : (
             <>
               <i className="fa-solid fa-spinner fa-spin"></i> {/* אייקון מסתובב של טעינה */}
-              <span>מכין סרטון...</span>
+              <span>20 שניות ותוכלו לזכות ברמז</span>
             </>
           )}
         </button>

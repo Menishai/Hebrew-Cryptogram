@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.4.85';
+const APP_VERSION = '1.4.86';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -1364,6 +1364,7 @@ const handleRevealAuthorOption = useCallback(() => {
                 hintsRemaining={userState.hintsRemaining}
                 hasLockedCells={hasLockedCells}
                 isAdReady={isAdReady}
+                showAd={showAd}
                 onWatchAd={() => {
                   setShowHintMenu(false);
                   showAd();
