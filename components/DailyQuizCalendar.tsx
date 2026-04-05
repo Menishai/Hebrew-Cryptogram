@@ -130,15 +130,15 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
               disabled={selectedMonth === 1}
               className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
              >
-               <i className="fa-solid fa-chevron-right text-xs"></i>
+               <i className="fa-solid fa-chevron-right text-xl"></i>
              </button>
-             <p className="text-[11px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
+             <p className="text-[16px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
              <button 
               onClick={nextMonth} 
               disabled={selectedMonth === 3}
               className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
              >
-               <i className="fa-solid fa-chevron-left text-xs"></i>
+               <i className="fa-solid fa-chevron-left text-xl"></i>
              </button>
           </div>
         </div>
@@ -150,36 +150,36 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
           
           {/* Difficulty Schedule Legend */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-             <div className="text-center text-xs font-black text-slate-400 uppercase tracking-widest mb-3">לוח קושי שבועי</div>
+             <div className="text-center text-s font-black text-slate-400 uppercase tracking-widest mb-3">לוח קושי שבועי</div>
              <div className="flex justify-between items-center gap-2">
                 <div className="flex flex-col items-center gap-1 flex-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-[10px] font-bold text-slate-600">יום א'</span>
-                  <span className="text-[9px] text-slate-400">קל</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                  <span className="text-[11px] font-bold text-slate-600">יום א'</span>
+                  <span className="text-[11px] text-slate-400">קל</span>
                 </div>
                 <div className="w-px h-6 bg-slate-100"></div>
                 <div className="flex flex-col items-center gap-1 flex-1">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <span className="text-[10px] font-bold text-slate-600">ב' - ד'</span>
-                  <span className="text-[9px] text-slate-400">בינוני</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                  <span className="text-[11px] font-bold text-slate-600">ב' - ד'</span>
+                  <span className="text-[11px] text-slate-400">בינוני</span>
                 </div>
                 <div className="w-px h-6 bg-slate-100"></div>
                 <div className="flex flex-col items-center gap-1 flex-1">
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                  <span className="text-[10px] font-bold text-slate-600">ה' - ו'</span>
-                  <span className="text-[9px] text-slate-400">קשה</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                  <span className="text-[11px] font-bold text-slate-600">ה' - ו'</span>
+                  <span className="text-[11px] text-slate-400">קשה</span>
                 </div>
                 <div className="w-px h-6 bg-slate-100"></div>
                 <div className="flex flex-col items-center gap-1 flex-1">
-                  <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                  <span className="text-[10px] font-bold text-slate-600">שבת</span>
-                  <span className="text-[9px] text-slate-400">אלוף</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
+                  <span className="text-[11px] font-bold text-slate-600">שבת</span>
+                  <span className="text-[11px] text-slate-400">אלוף</span>
                 </div>
              </div>
           </div>
 
           {/* Status Legend */}
-          <div className="flex justify-center gap-4 text-[10px] font-black text-slate-500">
+          <div className="flex justify-center gap-4 text-[12px] font-black text-slate-500">
              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div> הצלחת</div>
              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-rose-500 rounded-full"></div> נכשלת</div>
              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-slate-200 rounded-full"></div> נסיונות</div>

@@ -67,7 +67,7 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'no_hints',
-      title: 'מוח עצמאי (פתרון ללא רמזים)',
+      title: 'מוח עצמאי (פתרונות ללא רמזים)',
       icon: 'fa-brain',
       color: 'text-purple-600',
       bg: 'bg-purple-50',
@@ -139,7 +139,7 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'difficulty',
-      title: 'אלוף הקושי (כמה פתרונות ברמות קשה וקשה מאוד)',
+      title: 'אלוף הקושי (כמות פתרונות ברמות קשה וקשה מאוד)',
       icon: 'fa-bolt',
       color: 'text-rose-600',
       bg: 'bg-rose-50',
@@ -153,7 +153,7 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
     },
     {
       id: 'collector',
-      title: 'היסטוריון (דוברים שונים)',
+      title: 'היסטוריון (מקורות שונים)',
       icon: 'fa-book-open',
       color: 'text-amber-700',
       bg: 'bg-amber-50',
@@ -308,9 +308,9 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ stats, onBack, 
         </div>
 
         {categories.map((cat) => (
-          <div key={cat.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-200">
+          <div key={cat.id} className="bg-white rounded-[2.5rem] p-2.5 shadow-sm border border-slate-200">
             {/* Category Header */}
-            <div className="flex items-center justify-between mb-5 px-1">
+            <div className="flex items-center justify-between mb-3.5 px-1">
               <div className="flex items-center gap-4">
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl border ${cat.bg} ${cat.color} border-slate-100`}>
                   <i className={`fa-solid ${cat.icon}`}></i>

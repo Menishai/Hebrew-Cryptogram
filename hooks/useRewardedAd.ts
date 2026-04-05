@@ -39,7 +39,7 @@ AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => { // <-- הוספנ
       setIsAdReady(false);
       try {
         await AdMob.prepareRewardVideoAd({
-          adId: 'ca-app-pub-3940256099942544/5224354917', 
+          adId: 'ca-app-pub-2120452826670758/6883154495', 
           isTesting: true
         });
         if (isMounted) setIsAdReady(true);

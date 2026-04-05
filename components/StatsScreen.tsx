@@ -138,19 +138,19 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                 <div className="grid grid-cols-2 gap-3 w-full">
                   <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center">
                      <div className="text-blue-600 font-black text-xl">{accuracyRate}%</div>
-                     <div className="text-[10px] text-slate-500 font-bold uppercase">דיוק (מושלמים)</div>
+                     <div className="text-[11px] text-slate-500 font-bold uppercase">משחקים מושלמים</div>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center">
                      <div className="text-indigo-600 font-black text-xl">{uniqueAuthorsCount}</div>
-                     <div className="text-[10px] text-slate-500 font-bold uppercase">מקורות שפגשת</div>
+                     <div className="text-[11px] text-slate-500 font-bold uppercase">מקורות שפגשת</div>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center">
                      <div className="text-emerald-600 font-black text-xl">{winRate}%</div>
-                     <div className="text-[10px] text-slate-500 font-bold uppercase">שיעור הצלחה</div>
+                     <div className="text-[11px] text-slate-500 font-bold uppercase">שיעור הצלחה</div>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center">
                      <div className="text-rose-600 font-black text-xl">{avgMistakesPerGame}</div>
-                     <div className="text-[10px] text-slate-500 font-bold uppercase">ממוצע טעויות</div>
+                     <div className="text-[11px] text-slate-500 font-bold uppercase">ממוצע טעויות</div>
                   </div>
                 </div>
               </div>
@@ -163,7 +163,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                     הדרך לרמז הבא
                   </h3>
                   <span className="text-[11px] font-black text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                    Rewards
+                    פרסים
                   </span>
                 </div>
                 
