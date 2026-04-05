@@ -17,10 +17,11 @@ export const useRewardedAd = (onReward: () => void) => {
       try {
         await AdMob.initialize();
         
-        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => { // <-- הוספנו את המילה כאן!
           if (isMounted) {
             onRewardRef.current(); // קוראים לפונקציה השמורה
             loadAd();
+            console.log('Reward received:', reward);
           }
         });
 
