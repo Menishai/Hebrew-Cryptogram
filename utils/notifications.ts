@@ -35,7 +35,7 @@ export const setupDailyNotification = async (enabled: boolean, timeString: strin
             },
             allowWhileIdle: true,
           },
-          smallIcon: "ic_stat_icon_config_sample", // Optional, will use default if not found
+          smallIcon: "res://ic_stat_icon", // Use the app's status bar icon
         }
       ]
     });

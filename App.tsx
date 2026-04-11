@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.4.86';
+const APP_VERSION = '1.5';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -285,12 +285,18 @@ const App: React.FC = () => {
   }, []);
 
   // בלוק הוידאו!
-  const handleRewardEarned = useCallback(() => {
+const handleRewardEarned = useCallback(() => {
+    
+    // 1. סוגרים את חלונית הרמזים מיד!
+    setShowHintMenu(false); 
+
+    // 2. מעדכנים את כמות הרמזים
     setUserState(prev => ({
       ...prev,
       hintsRemaining: prev.hintsRemaining + 1
     }));
 
+    // 3. מעדכנים את הסטטיסטיקות
     setStats(prev => {
       const newStats = { ...prev, hintsRemaining: prev.hintsRemaining + 1 };
       if (typeof persistStats === 'function') {
@@ -299,12 +305,14 @@ const App: React.FC = () => {
       return newStats;
     });
 
+    // 4. מציגים את הודעת הניצחון על הלוח הראשי
     setTimeout(() => {
       setRewardToast(true);
       playSound('win');
       setTimeout(() => setRewardToast(false), 3500); 
     }, 500);
-  }, [playSound]); 
+
+  }, [playSound]);
 
   const { isAdReady, showAd } = useRewardedAd(handleRewardEarned);
   // ==========================================
@@ -566,11 +574,21 @@ const App: React.FC = () => {
     return Math.max(0, 3 - used);
   }, [levelData, stats.dailyProgress]);
 
-  const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0, hintsUsedThisLevel: number = 0) => {
+  const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0, hintsUsedThisLevel: number = 0, hintsByTypeThisLevel?: { letter: number, author: number, locked: number }) => {
     setStats(prev => {
       const newStats = { ...prev };
       newStats.gamesPlayed += 1;
       newStats.totalMistakes += mistakesCount;
+            
+      // Update global hint stats
+      newStats.totalHintsUsed = (newStats.totalHintsUsed || 0) + hintsUsedThisLevel;
+      if (hintsByTypeThisLevel) {
+        const hbt = { ...(newStats.hintsByType || { letter: 0, author: 0, locked: 0 }) };
+        hbt.letter = (hbt.letter || 0) + hintsByTypeThisLevel.letter;
+        hbt.author = (hbt.author || 0) + hintsByTypeThisLevel.author;
+        hbt.locked = (hbt.locked || 0) + hintsByTypeThisLevel.locked;
+        newStats.hintsByType = hbt;
+      }
       
       const isDaily = !!levelInfo.isDaily;
       const todayStr = new Date().toISOString().split('T')[0];
@@ -863,8 +881,12 @@ const App: React.FC = () => {
       currentLevel: stats.currentLevel || 1,
       isAuthorRevealed: false,
       hintRevealedIndices: [],
-      hintsUsedThisLevel: 0
-    };
+      hintsUsedThisLevel: 0,
+      hintsByTypeThisLevel: {
+        letter: 0,
+        author: 0,
+        locked: 0
+      }    };
 
     setUserState(initialUserState);
     setStatus(GameStatus.PLAYING);
@@ -1000,8 +1022,13 @@ const handleRevealAuthorOption = useCallback(() => {
     });
     setUserState(prev => ({
       ...prev,
-      hintsRemaining: newHints
-    }));
+      hintsRemaining: newHints,
+      isAuthorRevealed: true,
+      hintsUsedThisLevel: (prev.hintsUsedThisLevel || 0) + 1,
+      hintsByTypeThisLevel: {
+        ...(prev.hintsByTypeThisLevel || { letter: 0, author: 0, locked: 0 }),
+        author: (prev.hintsByTypeThisLevel?.author || 0) + 1
+      }    }));
 
     // הפתרון ל-Ghost Click באנדרואיד: משהים ממש מעט את פתיחת החלונית 
     // כדי שאירוע הלחיצה יסתיים ולא יסגור אותה מיד
@@ -1081,8 +1108,11 @@ const handleRevealAuthorOption = useCallback(() => {
       cellGuesses: newGuesses, 
       cellFeedback: newFeedback, 
       hintRevealedIndices: newHintRevealed,
-      hintsUsedThisLevel: (prev.hintsUsedThisLevel || 0) + 1
-    }));
+      hintsUsedThisLevel: (prev.hintsUsedThisLevel || 0) + 1,
+      hintsByTypeThisLevel: {
+        ...(prev.hintsByTypeThisLevel || { letter: 0, author: 0, locked: 0 }),
+        [isLockedHintMode ? 'locked' : 'letter']: (prev.hintsByTypeThisLevel?.[isLockedHintMode ? 'locked' : 'letter'] || 0) + 1
+      }    }));
 
     setIsHintMode(false);
     setIsLockedHintMode(false);
@@ -1241,7 +1271,7 @@ const handleRevealAuthorOption = useCallback(() => {
       if (isWin) { 
         setTimeout(() => {
           setStatus(GameStatus.WON); 
-          updateStats(true, levelData, currentLevelDifficulty, userState.mistakes, userState.hintsUsedThisLevel); 
+          updateStats(true, levelData, currentLevelDifficulty, userState.mistakes, userState.hintsUsedThisLevel, userState.hintsByTypeThisLevel); 
           playSound('win'); 
         }, 300);
         
@@ -1282,7 +1312,7 @@ const handleRevealAuthorOption = useCallback(() => {
         const newFeedback = { ...prev.cellFeedback, [idx]: 'wrong' as const };
         if (newMistakes >= prev.maxMistakes) { 
           setStatus(GameStatus.LOST); 
-          updateStats(false, levelData, currentLevelDifficulty, newMistakes); 
+          updateStats(false, levelData, currentLevelDifficulty, newMistakes, prev.hintsUsedThisLevel, prev.hintsByTypeThisLevel); 
         }
         return { ...prev, mistakes: newMistakes, cellFeedback: newFeedback, cellGuesses: { ...prev.cellGuesses, [idx]: letter } };
       });
@@ -1532,7 +1562,9 @@ const handleRevealAuthorOption = useCallback(() => {
                       <p className="text-gray-500 font-medium text-center">מכין את הפאזל הבא...</p>
                     </div>
                   ) : (
+                  <div key={levelData?.isDaily ? levelData.dailyDate : stats.currentLevel} className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 ease-out">
                     <Board level={levelData!} userState={userState} fontSize={fontSize} isHintMode={isHintMode} isLockedHintMode={isLockedHintMode} onSelect={handleCellClick} completedLetters={completedLetters} celebratingWordIdx={celebratingWordIdx} isCellLocked={isCellLocked} />
+                  </div>
                   )}
                   {!isOverlayVisible && (status === GameStatus.WON || status === GameStatus.LOST) && (
                     <div className="mt-8 flex flex-col items-center gap-4 animate-in slide-in-from-bottom duration-500 pb-8">

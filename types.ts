@@ -65,6 +65,13 @@ export interface Statistics {
 
   // Advanced tracking
   totalMistakes: number;
+    // Hint tracking
+  totalHintsUsed?: number;
+  hintsByType?: {
+    letter?: number;
+    author?: number;
+    locked?: number;
+  };
   // Purchases
   isAdFree?: boolean;
   isSkipAnytimePurchased?: boolean;
@@ -79,6 +86,7 @@ export interface GameLevel {
   quote: string;
   author: string;
   year?: string;
+  category?: QuoteCategory;
   mapping: Record<string, number>; 
   revealedIndices: number[]; 
   lockedIndices: number[];
@@ -100,6 +108,11 @@ export interface UserState {
   isAuthorRevealed: boolean;
   hintRevealedIndices: number[]; // Tracks which letters were solved via hints
   hintsUsedThisLevel?: number;
+    hintsByTypeThisLevel?: {
+    letter: number;
+    author: number;
+    locked: number;
+  };
 }
 
 export enum GameStatus {

@@ -143,7 +143,7 @@
     }
 
     const selected = unplayed[Math.floor(Math.random() * unplayed.length)];
-    const level = buildLevelFromQuote(selected.quote, selected.author, selected.year, difficulty, currentLevel);
+  const level = buildLevelFromQuote(selected.quote, selected.author, selected.year, difficulty, currentLevel, undefined, selected.category);
     (level as any).wasCategoryExhausted = wasCategoryExhausted;
     return level;
   };
@@ -171,13 +171,13 @@
       selectedQuote = dailyPool[index];
     }
 
-    const level = buildLevelFromQuote(selectedQuote.quote, selectedQuote.author, (selectedQuote as any).year, difficulty, 10, sr);
+  const level = buildLevelFromQuote(selectedQuote.quote, selectedQuote.author, (selectedQuote as any).year, difficulty, 10, sr, (selectedQuote as any).category);
     level.isDaily = true;
     level.dailyDate = dateStr;
     return level;
   };
 
-  function buildLevelFromQuote(quote: string, author: string, year: string | undefined, difficulty: Difficulty, levelNum: number, sr?: SeededRandom): GameLevel {
+function buildLevelFromQuote(quote: string, author: string, year: string | undefined, difficulty: Difficulty, levelNum: number, sr?: SeededRandom, category?: QuoteCategory): GameLevel {
     const cleanQuote = quote.trim();
     const letterToNum: Record<string, number> = {};
     const uniqueLetters = new Set<string>();
@@ -272,6 +272,7 @@
       quote: cleanQuote,
       author,
       year,
+      category,
       mapping: letterToNum,
       revealedIndices,
       lockedIndices,

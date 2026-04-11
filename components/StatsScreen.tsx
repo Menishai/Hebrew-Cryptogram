@@ -227,6 +227,57 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                     </div>
                  </div>
               </div>
+              
+              {/* Hint Statistics Card */}
+              <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                <div className="flex items-center gap-3 mb-6 text-slate-800 font-black">
+                  <i className="fa-solid fa-lightbulb text-amber-500"></i>
+                  שימוש ברמזים
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100 flex flex-col items-center">
+                    <div className="text-amber-600 font-black text-2xl">{stats.totalHintsUsed || 0}</div>
+                    <div className="text-[10px] text-amber-700 font-bold uppercase">סה"כ רמזים</div>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-3xl border border-blue-100 flex flex-col items-center">
+                    <div className="text-blue-600 font-black text-2xl">{stats.winsWithoutHints || 0}</div>
+                    <div className="text-[10px] text-blue-700 font-bold uppercase">ניצחונות ללא רמז</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-blue-500">
+                        <i className="fa-solid fa-font"></i>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">גילוי אותיות</span>
+                    </div>
+                    <span className="font-black text-slate-800">{stats.hintsByType?.letter || 0}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-purple-500">
+                        <i className="fa-solid fa-user-pen"></i>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">גילוי מחבר</span>
+                    </div>
+                    <span className="font-black text-slate-800">{stats.hintsByType?.author || 0}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-rose-500">
+                        <i className="fa-solid fa-lock-open"></i>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">פתיחת נעולים</span>
+                    </div>
+                    <span className="font-black text-slate-800">{stats.hintsByType?.locked || 0}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-300">
