@@ -630,7 +630,7 @@ const handleRewardEarned = useCallback(() => {
         }
 
         // Genre Tracking
-        if (!isDaily && levelInfo.category) {
+        if (levelInfo.category) {
           newStats.winsByCategory = {
             ...(newStats.winsByCategory || {}),
             [levelInfo.category]: (newStats.winsByCategory?.[levelInfo.category] || 0) + 1
