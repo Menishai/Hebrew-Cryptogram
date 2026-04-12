@@ -6,12 +6,12 @@ interface SolitaireEventButtonProps {
 
 // Helper: Check if current time is within the Event Window (Thu 18:00 - Sun 09:00)
 export const isEventTime = (now: Date) => {
-  const day = now.getDay();
+  const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 4 = Thursday, 5 = Friday, 6 = Saturday
   const hour = now.getHours();
   
-  if (day === 4 && hour >= 18) return true; // Thursday >= 18:00
-  if (day === 5 || day === 6) return true;  // Friday, Saturday
-  if (day === 0 && hour < 23) return true;   // Sunday < 09:00 // שיניתי ליום 3, צריך להחזיר ליום 0
+  if (day === 0 && hour >= 18) return true; // Thursday >= 18:00 // צריך להיות 4, 18
+  if (day === 1 || day === 6) return true;  // Friday, Saturday // צריך להיות 5, 6
+  if (day === 6 && hour < 9) return true;   // Sunday < 09:00 // צריך להיות 0
   
   return false;
 };
@@ -72,17 +72,20 @@ const SolitaireEventButton: React.FC<SolitaireEventButtonProps> = ({ onClick }) 
   const isTrial = !eventActive && !hasPlayedTrial;
 
   const handleClick = () => {
+    // 1. אם נעול - מקפיצים הודעה ולא עושים כלום
     if (isLocked) {
       setToastVisible(true);
-      setTimeout(() => setToastVisible(false), 3000);
+      setTimeout(() => setToastVisible(false), 3000); // מעלים את ההודעה אחרי 3 שניות
       return;
     }
 
+    // 2. אם זו טעימה חינם - שומרים בזיכרון שניצלנו אותה
     if (isTrial) {
       localStorage.setItem('hasPlayedSolitaireTrial', 'true');
       setHasPlayedTrial(true);
     }
 
+    // 3. מפעילים את הפונקציה שמעבירה מסך!
     onClick();
   };
 
@@ -113,7 +116,7 @@ const SolitaireEventButton: React.FC<SolitaireEventButtonProps> = ({ onClick }) 
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center shadow-sm">
              <i className="fa-solid fa-star text-[8px] text-white"></i>
           </div>
-                )}
+        )}
         
         {isTrial && (
           <span className="absolute top-0 right-0 flex h-3 w-3">

@@ -80,6 +80,7 @@ export interface Statistics {
   // Daily Quiz Tracking: Record<"YYYY-MM-DD", DailyDayStats>
   dailyProgress?: Record<string, DailyDayStats>;
   rewardedDailyWeeks?: string[];
+  solitaireQuoteIndex?: number;
 }
 
 export interface GameLevel {

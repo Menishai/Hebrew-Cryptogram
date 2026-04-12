@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.5';
+const APP_VERSION = '1.5.6';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -1343,16 +1343,44 @@ const handleRevealAuthorOption = useCallback(() => {
     setPreFetchedLevel(null);
   };
   
+    // Handle Solitaire Game Initialization when screen changes
+  useEffect(() => {
+    if (currentScreen === Screen.SOLITAIRE) {
+      // If we have levelData but it's not a solitaire level, clear it to trigger re-generation
+      if (levelData && !levelData.id.startsWith('solitaire-')) {
+        setLevelData(null);
+        return;
+      }
+
+      if (!levelData) {
+        setStatus(GameStatus.LOADING);
+        try {
+          const newLevel = generateSolitairePuzzle(Difficulty.MEDIUM, stats.solitaireQuoteIndex || 0);
+          setLevelData(newLevel);
+          initLevelState(newLevel, Difficulty.MEDIUM);
+          setStatus(GameStatus.PLAYING);
+        } catch (error) {
+          console.error("Failed to initialize Solitaire game:", error);
+          setCurrentScreen(Screen.HOME);
+          setStatus(GameStatus.PLAYING);
+        }
+      }
+    }
+  }, [currentScreen, levelData, initLevelState]);
+
   const startSolitaireGame = useCallback(() => {
     setStatus(GameStatus.LOADING);
     setCurrentScreen(Screen.SOLITAIRE);
     
-    setTimeout(() => {
+      try {
       const newLevel = generateSolitairePuzzle(Difficulty.MEDIUM);
       setLevelData(newLevel);
       initLevelState(newLevel, Difficulty.MEDIUM);
       setStatus(GameStatus.PLAYING);
-    }, 600);
+        } catch (error) {
+        console.error("Failed to start Solitaire game:", error);
+        setCurrentScreen(Screen.HOME);
+      }
   }, [initLevelState]);
 
   const handleGameOverAction = () => {
@@ -1517,6 +1545,7 @@ const handleRevealAuthorOption = useCallback(() => {
             
             {currentScreen === Screen.HOME ? (
               <MainMenu 
+                key="home-screen"
                 onNewGame={() => startNewGame()} 
                 onContinue={continueGame} 
                 hasSavedGame={hasSavedGame} 
@@ -1528,11 +1557,22 @@ const handleRevealAuthorOption = useCallback(() => {
                 onOpenShop={() => setShowShop(true)} 
                 currentLevel={stats.currentLevel || 1} 
                 hasUnclaimedAchievements={hasUnclaimedAchievements} 
-              />
+onSolitaireEvent={() => {
+    try {
+      // הוספנו את רמת הקושי והאינדקס!
+      const newPuzzle = generateSolitairePuzzle(Difficulty.MEDIUM, stats.solitaireQuoteIndex || 0); 
+      
+      setLevelData(newPuzzle); 
+      setCurrentScreen(Screen.SOLITAIRE);
+    } catch (error) {
+      console.error("Failed to load solitaire from button:", error);
+                }}}             
+                />
             ) : currentScreen === Screen.STATS ? (
-              <StatsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
+              <StatsScreen key="stats-screen" stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
             ) : currentScreen === Screen.DAILY_QUIZ ? (
               <DailyQuizCalendar 
+                key="daily-quiz-screen"
                 dailyProgress={stats.dailyProgress || {}} 
                 onBack={() => setCurrentScreen(Screen.HOME)} 
                 onSelectDate={startDailyGame} 
@@ -1561,13 +1601,20 @@ const handleRevealAuthorOption = useCallback(() => {
                 onOpenShop={() => setShowShop(true)}
               />
             ) : currentScreen === Screen.ACHIEVEMENTS ? (
-              <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
-            ) : currentScreen === Screen.SOLITAIRE && levelData ? (
-              <SolitaireGameMode 
+              <AchievementsScreen key="achievements-screen" stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
+            ) : currentScreen === Screen.SOLITAIRE ? (
+              levelData ? (
+                <SolitaireGameMode 
+                key="solitaire-screen"
                 levelData={levelData} 
                 onBack={() => setCurrentScreen(Screen.HOME)} 
                 onWin={(mistakes) => {
                   setStatus(GameStatus.WON);
+                      setStats(prev => {
+                      const newStats = { ...prev, solitaireQuoteIndex: (prev.solitaireQuoteIndex || 0) + 1 };
+                      persistStats(newStats);
+                      return newStats;
+                    });
                   setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show win overlay
                 }} 
                 onLose={() => {
@@ -1588,8 +1635,14 @@ const handleRevealAuthorOption = useCallback(() => {
                   return false;
                 }}
               />
+                ) : (
+                <div key="solitaire-loader" className="flex flex-col items-center justify-center h-full bg-slate-50">
+                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-500 font-bold">טוען סוליטר...</p>
+                </div>
+              )
             ) : (
-              <div className="flex flex-col h-full overflow-hidden">
+              <div key="playing-screen" className="flex flex-col h-full overflow-hidden">
                 <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode || isLockedHintMode} isIdle={isIdle} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
                 <main 
                   ref={mainScrollRef}
@@ -1663,10 +1716,10 @@ const handleRevealAuthorOption = useCallback(() => {
                 )}
               </div>
             )}
-          </motion.div>
+              </motion.div>
         )}
-      </AnimatePresence>
-    </div>
+    </AnimatePresence>
+</div>
   );
 };
 
