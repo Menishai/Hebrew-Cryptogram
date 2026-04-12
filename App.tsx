@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GameLevel, UserState, GameStatus, Difficulty, Screen, Statistics, FontSize, QuoteCategory, DailyDayStats } from './types';
 import { generateCryptogramPuzzle, generateDailyPuzzle } from './services/puzzleService';
+import { generateSolitairePuzzle } from './services/solitairePuzzleService';
 import Header from './components/Header';
 import Board from './components/Board';
 import Keyboard from './components/Keyboard';
@@ -1341,6 +1342,18 @@ const handleRevealAuthorOption = useCallback(() => {
     setActiveCategories(cats);
     setPreFetchedLevel(null);
   };
+  
+  const startSolitaireGame = useCallback(() => {
+    setStatus(GameStatus.LOADING);
+    setCurrentScreen(Screen.SOLITAIRE);
+    
+    setTimeout(() => {
+      const newLevel = generateSolitairePuzzle(Difficulty.MEDIUM);
+      setLevelData(newLevel);
+      initLevelState(newLevel, Difficulty.MEDIUM);
+      setStatus(GameStatus.PLAYING);
+    }, 600);
+  }, [initLevelState]);
 
   const handleGameOverAction = () => {
     if (levelData?.isDaily) {
@@ -1511,12 +1524,6 @@ const handleRevealAuthorOption = useCallback(() => {
                 onSettings={() => setCurrentScreen(Screen.SETTINGS)} 
                 onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} 
                 onDailyQuiz={() => setCurrentScreen(Screen.DAILY_QUIZ)}
-                onSolitaireEvent={() => {
-                  if (!levelData) {
-                    startNewGame();
-                  }
-                  setCurrentScreen(Screen.SOLITAIRE);
-                }}
                 onShowTutorial={() => setShowTutorial(true)} 
                 onOpenShop={() => setShowShop(true)} 
                 currentLevel={stats.currentLevel || 1} 
@@ -1567,6 +1574,19 @@ const handleRevealAuthorOption = useCallback(() => {
                   setStatus(GameStatus.LOST);
                   setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show lose overlay
                 }} 
+                coins={stats.coins || 0}
+                onSpendCoins={(amount) => {
+                  if ((stats.coins || 0) >= amount) {
+                    setStats(prev => {
+                      const newStats = { ...prev, coins: (prev.coins || 0) - amount };
+                      persistStats(newStats);
+                      return newStats;
+                    });
+                    return true;
+                  }
+                  setShowShop(true);
+                  return false;
+                }}
               />
             ) : (
               <div className="flex flex-col h-full overflow-hidden">

@@ -70,12 +70,37 @@ export const useSolitaireLogic = () => {
     });
   }, []);
 
+  const resetDeck = useCallback((missingLetters: string[]) => {
+    setGameState(prev => {
+      // Fisher-Yates shuffle
+      const shuffled = [...missingLetters];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const initialPool: string[][] = [[], [], [], [], []];
+      const newDeck = [...shuffled];
+
+      // Draw initial cards
+      for (let i = 0; i < 5; i++) {
+        if (newDeck.length > 0) {
+          initialPool[i].push(newDeck.pop()!);
+        }
+      }
+
+      return {
+        deck: newDeck,
+        pool: initialPool
+      };
+    });
+  }, []);
 
   return {
     deck: gameState.deck,
     pool: gameState.pool,
     initGame,
     drawCards,
-    playCard
-  };
+    playCard,
+    resetDeck  };
 };

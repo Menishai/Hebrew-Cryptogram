@@ -14,7 +14,7 @@ const SolitaireBoard: React.FC<SolitaireBoardProps> = ({
   onCardClick
 }) => {
   return (
-    <div className="w-full px-2 py-4 sm:px-4 sm:py-6 bg-slate-100 border-t border-slate-200 flex items-center justify-between select-none" dir="ltr">
+    <div className="w-full px-2 py-4 sm:px-4 sm:py-6 bg-slate-100 border-t border-slate-200 flex items-center justify-center gap-4 sm:gap-8 select-none" dir="ltr">
       {/* Deck (Left) */}
       <button
         onClick={drawCards}
@@ -36,7 +36,7 @@ const SolitaireBoard: React.FC<SolitaireBoardProps> = ({
         )}
       </button>
 
-      {/* Pool (Right/Middle) */}
+      {/* Pool (Middle) */}
       <div className="flex gap-2 sm:gap-3">
         {pool.map((stack, index) => {
           const topCard = stack.length > 0 ? stack[stack.length - 1] : null;

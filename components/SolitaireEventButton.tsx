@@ -11,7 +11,7 @@ export const isEventTime = (now: Date) => {
   
   if (day === 4 && hour >= 18) return true; // Thursday >= 18:00
   if (day === 5 || day === 6) return true;  // Friday, Saturday
-  if (day === 0 && hour < 9) return true;   // Sunday < 09:00
+  if (day === 0 && hour < 23) return true;   // Sunday < 09:00 // שיניתי ליום 3, צריך להחזיר ליום 0
   
   return false;
 };
@@ -93,23 +93,32 @@ const SolitaireEventButton: React.FC<SolitaireEventButtonProps> = ({ onClick }) 
     <div className="relative flex flex-col items-center gap-1" dir="rtl">
       <button
         onClick={handleClick}
-        className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl shadow-sm border transition-all active:scale-95 relative overflow-hidden ${
+        className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-[1.25rem] shadow-lg border-2 transition-all active:scale-90 relative overflow-hidden group ${
           isLocked
             ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-            : 'bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-400 text-white hover:shadow-md hover:scale-105'
+            : 'bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 border-white/30 text-white hover:shadow-indigo-200/50 hover:scale-110'
         }`}
         title="סוליטר צופן"
       >
-        <i className={`fa-solid ${isLocked ? 'fa-lock' : 'fa-layer-group'} text-lg md:text-xl relative z-10`}></i>
-        
+        {/* Animated background glow for active state */}
         {!isLocked && (
-          <div className="absolute inset-0 bg-white/20 opacity-0 hover:opacity-100 transition-opacity"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
         )}
+
+        <div className="relative z-10 flex flex-col items-center">
+          <i className={`fa-solid ${isLocked ? 'fa-lock' : 'fa-layer-group'} text-xl md:text-2xl drop-shadow-sm`}></i>
+        </div>
+
+        {!isLocked && (
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center shadow-sm">
+             <i className="fa-solid fa-star text-[8px] text-white"></i>
+          </div>
+                )}
         
         {isTrial && (
-          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="absolute top-0 right-0 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-white"></span>
           </span>
         )}
       </button>
