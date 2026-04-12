@@ -15,13 +15,14 @@ import TutorialOverlay from './components/TutorialOverlay';
 import HintModal from './components/HintModal';
 import ShopModal from './components/ShopModal';
 import SplashScreen from './components/SplashScreen';
+import SolitaireGameMode from './components/SolitaireGameMode';
 import { useGameAudio } from './hooks/useGameAudio';
 import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
 import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.5.5';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -1510,6 +1511,12 @@ const handleRevealAuthorOption = useCallback(() => {
                 onSettings={() => setCurrentScreen(Screen.SETTINGS)} 
                 onAchievements={() => setCurrentScreen(Screen.ACHIEVEMENTS)} 
                 onDailyQuiz={() => setCurrentScreen(Screen.DAILY_QUIZ)}
+                onSolitaireEvent={() => {
+                  if (!levelData) {
+                    startNewGame();
+                  }
+                  setCurrentScreen(Screen.SOLITAIRE);
+                }}
                 onShowTutorial={() => setShowTutorial(true)} 
                 onOpenShop={() => setShowShop(true)} 
                 currentLevel={stats.currentLevel || 1} 
@@ -1548,6 +1555,19 @@ const handleRevealAuthorOption = useCallback(() => {
               />
             ) : currentScreen === Screen.ACHIEVEMENTS ? (
               <AchievementsScreen stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
+            ) : currentScreen === Screen.SOLITAIRE && levelData ? (
+              <SolitaireGameMode 
+                levelData={levelData} 
+                onBack={() => setCurrentScreen(Screen.HOME)} 
+                onWin={(mistakes) => {
+                  setStatus(GameStatus.WON);
+                  setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show win overlay
+                }} 
+                onLose={() => {
+                  setStatus(GameStatus.LOST);
+                  setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show lose overlay
+                }} 
+              />
             ) : (
               <div className="flex flex-col h-full overflow-hidden">
                 <Header mistakes={userState.mistakes} maxMistakes={userState.maxMistakes} hintsRemaining={userState.hintsRemaining} onUseHint={handleHintClick} isHintModeActive={isHintMode || isLockedHintMode} isIdle={isIdle} onUndo={handleUndoRequest} canUndo={history.length > 0} onRestart={() => handleGameOverAction()} onHome={() => setCurrentScreen(Screen.HOME)} onBack={levelData?.isDaily ? () => setCurrentScreen(Screen.DAILY_QUIZ) : undefined} onShowTutorial={() => setShowTutorial(true)} currentLevel={stats.currentLevel || 1} difficulty={currentLevelDifficulty} canRestart={canRestart} hasUnclaimedAchievements={hasUnclaimedAchievements} isDaily={levelData?.isDaily} />
@@ -1563,6 +1583,15 @@ const handleRevealAuthorOption = useCallback(() => {
                     </div>
                   ) : (
                   <div key={levelData?.isDaily ? levelData.dailyDate : stats.currentLevel} className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 ease-out">
+                       {levelData?.category && ['sports', 'cinema'].includes(levelData.category) && (
+                        <div className="mb-5 inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 px-4 py-1.5 rounded-full shadow-sm">
+                          <i className={`fa-solid ${levelData.category === 'sports' ? 'fa-basketball text-orange-500' : 'fa-film text-purple-500'}`}></i>
+                          <span className="text-xs font-black text-indigo-900">
+                            {levelData.category === 'sports' ? 'חבילת ספורט' : 'חבילת קולנוע וטלוויזיה'}
+                          </span>
+                          <i className="fa-solid fa-crown text-amber-400 text-[10px] mr-1"></i>
+                        </div>
+                      )}
                     <Board level={levelData!} userState={userState} fontSize={fontSize} isHintMode={isHintMode} isLockedHintMode={isLockedHintMode} onSelect={handleCellClick} completedLetters={completedLetters} celebratingWordIdx={celebratingWordIdx} isCellLocked={isCellLocked} />
                   </div>
                   )}

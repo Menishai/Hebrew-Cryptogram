@@ -12,8 +12,8 @@ export enum Screen {
   STATS = 'STATS',
   SETTINGS = 'SETTINGS',
   ACHIEVEMENTS = 'ACHIEVEMENTS',
-  DAILY_QUIZ = 'DAILY_QUIZ'
-}
+  DAILY_QUIZ = 'DAILY_QUIZ',
+  SOLITAIRE = 'SOLITAIRE'}
 
 export enum FontSize {
   SMALL = 'SMALL',
