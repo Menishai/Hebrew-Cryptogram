@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.6';
+const APP_VERSION = '1.5.7';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -566,14 +566,20 @@ const handleRewardEarned = useCallback(() => {
   const isDailyRetryAllowed = useMemo(() => {
     if (!levelData?.isDaily || !levelData.dailyDate) return true;
     const dayStats = stats.dailyProgress?.[levelData.dailyDate];
-    return !dayStats || dayStats.attempts < 3;
-  }, [levelData, stats.dailyProgress]);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isOldAttempt = dayStats && dayStats.status !== 'won' && 
+                         ((dayStats.lastAttemptDate && dayStats.lastAttemptDate !== todayStr) || 
+                          (!dayStats.lastAttemptDate && levelData.dailyDate !== todayStr));
+    return !dayStats || isOldAttempt || dayStats.attempts < 3;  }, [levelData, stats.dailyProgress]);
 
   const dailyAttemptsLeft = useMemo(() => {
     if (!levelData?.isDaily || !levelData.dailyDate) return 0;
     const dayStats = stats.dailyProgress?.[levelData.dailyDate];
-    const used = dayStats?.attempts || 0;
-    return Math.max(0, 3 - used);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isOldAttempt = dayStats && dayStats.status !== 'won' && 
+                         ((dayStats.lastAttemptDate && dayStats.lastAttemptDate !== todayStr) || 
+                          (!dayStats.lastAttemptDate && levelData.dailyDate !== todayStr));
+    const used = isOldAttempt ? 0 : (dayStats?.attempts || 0);    return Math.max(0, 3 - used);
   }, [levelData, stats.dailyProgress]);
 
   const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0, hintsUsedThisLevel: number = 0, hintsByTypeThisLevel?: { letter: number, author: number, locked: number }) => {
@@ -598,9 +604,23 @@ const handleRewardEarned = useCallback(() => {
       if (isDaily && levelInfo.dailyDate) {
         const dp = { ...(newStats.dailyProgress || {}) };
         const dayStats = dp[levelInfo.dailyDate] || { status: 'none', attempts: 0 };
+                
+        // Reset attempts if the last attempt was on a previous day and we haven't won
+        const isOldAttempt = dayStats.status !== 'won' && 
+                             ((dayStats.lastAttemptDate && dayStats.lastAttemptDate !== todayStr) || 
+                              (!dayStats.lastAttemptDate && levelInfo.dailyDate !== todayStr));
+                              
+        if (isOldAttempt) {
+          dayStats.attempts = 0;
+          dayStats.status = 'none';
+        }
+        
         dayStats.attempts += 1;
+        dayStats.lastAttemptDate = todayStr;
+        
         if (won) dayStats.status = 'won';
         else if (dayStats.attempts >= 3) dayStats.status = 'lost';
+
         dp[levelInfo.dailyDate] = dayStats;
         newStats.dailyProgress = dp;
       }
@@ -935,8 +955,16 @@ const handleRewardEarned = useCallback(() => {
 
   const startDailyGame = useCallback(async (dateStr: string) => {
     const dayStats = stats.dailyProgress?.[dateStr];
-    if (dayStats && dayStats.attempts >= 3 && dayStats.status !== 'won') {
-      setCurrentScreen(Screen.DAILY_QUIZ);
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Only block if they failed 3 times TODAY. If it was a previous day, they get another chance.
+    // If lastAttemptDate is missing (old data), we assume the attempt was made on the puzzle's date.
+    const isLockedToday = dayStats && 
+                          dayStats.attempts >= 3 && 
+                          dayStats.status !== 'won' && 
+                          (dayStats.lastAttemptDate === todayStr || (!dayStats.lastAttemptDate && dateStr === todayStr));
+                          
+    if (isLockedToday) {      setCurrentScreen(Screen.DAILY_QUIZ);
       return;
     }
 
@@ -1621,11 +1649,11 @@ onSolitaireEvent={() => {
                   setStatus(GameStatus.LOST);
                   setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show lose overlay
                 }} 
-                coins={stats.coins || 0}
-                onSpendCoins={(amount) => {
-                  if ((stats.coins || 0) >= amount) {
-                    setStats(prev => {
-                      const newStats = { ...prev, coins: (prev.coins || 0) - amount };
+                  hintsRemaining={stats.hintsRemaining}
+                  onSpendHints={(amount) => {
+                    if (stats.hintsRemaining >= amount) {
+                      setStats(prev => {
+                        const newStats = { ...prev, hintsRemaining: prev.hintsRemaining - amount };
                       persistStats(newStats);
                       return newStats;
                     });

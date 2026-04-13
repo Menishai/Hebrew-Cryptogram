@@ -26,6 +26,7 @@ export type QuoteCategory = 'proverb' | 'song' | 'source' | 'famous' | 'sports' 
 export interface DailyDayStats {
   status: 'won' | 'lost' | 'none';
   attempts: number;
+  lastAttemptDate?: string;
 }
 
 export interface Statistics {

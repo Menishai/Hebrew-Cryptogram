@@ -203,8 +203,16 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
               const isToday = dateStr === todayStr;
               const diff = getDifficulty(d);
               
-              const isLocked = !isFuture && stats.attempts >= 3 && stats.status !== 'won';
-              const attemptsUsed = stats.attempts;
+              const isLocked = !isFuture && 
+                               stats.attempts >= 3 && 
+                               stats.status !== 'won' && 
+                               (stats.lastAttemptDate === todayStr || (!stats.lastAttemptDate && dateStr === todayStr));
+                               
+              // If the attempts were from a previous day and they didn't win, we treat them as 0 for display
+              // because they get a fresh start today.
+              const attemptsUsed = (stats.status === 'won' || stats.lastAttemptDate === todayStr || (!stats.lastAttemptDate && dateStr === todayStr)) 
+                                   ? stats.attempts 
+                                   : 0;
 
               // Logic for styling
               let bgClass = 'bg-white hover:border-blue-200 shadow-sm';

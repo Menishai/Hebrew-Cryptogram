@@ -56,8 +56,8 @@ const MainMenu: React.FC<MainMenuProps> = ({
         </button>
       </div>
 
-      {/* Daily Quiz Area (Top Left) */}
-      <div className="absolute top-6 left-6 z-30 flex flex-col gap-3">
+      {/* Floating Action Buttons Area (Top Left) */}
+      <div className="absolute top-6 left-6 z-30 flex flex-col gap-3 items-center">
         <button 
           onClick={onDailyQuiz}
           className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm border border-rose-100 hover:bg-rose-50 transition-all active:scale-95 group relative"
@@ -69,7 +69,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
             <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
           </span>
         </button>
-
+        
         <SolitaireEventButton onClick={onSolitaireEvent} />
       </div>
 
@@ -176,7 +176,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       <div className="mt-12 md:mt-16 flex flex-col items-center gap-2 opacity-50">
-        <p className="text-slate-500 text-[11px] md:text-[12px] font-black uppercase tracking-widest">Version 1.5.6</p>
+        <p className="text-slate-500 text-[11px] md:text-[12px] font-black uppercase tracking-widest">Version 1.5.7</p>
       </div>
     </div>
   );

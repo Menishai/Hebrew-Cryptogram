@@ -10,8 +10,8 @@ interface SolitaireGameModeProps {
   onBack: () => void;
   onWin: (mistakes: number) => void;
   onLose: () => void;
-  coins: number;
-  onSpendCoins: (amount: number) => boolean;
+  hintsRemaining: number;
+  onSpendHints: (amount: number) => boolean;
 }
 
 const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
@@ -19,8 +19,8 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   onBack,
   onWin,
   onLose,
-  coins,
-  onSpendCoins
+  hintsRemaining,
+  onSpendHints
 }) => {
   const { deck, pool, initGame, drawCards, playCard, resetDeck } = useSolitaireLogic();
   const [showHintMenu, setShowHintMenu] = useState(false);
@@ -48,14 +48,14 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
     for (let i = 0; i < levelData.quote.length; i++) {
       const char = levelData.quote[i];
       if (isHebrewLetter(char) && !userState.cellGuesses[i]) {
-        missing.push(char);
+        missing.push(normalizeHebrewChar(char));
       }
     }
     return missing;
   }, [levelData.quote, userState.cellGuesses]);
 
   const handleResetDeck = () => {
-    if (onSpendCoins(2)) {
+    if (onSpendHints(2)) {
       const missing = getMissingLetters();
       resetDeck(missing);
       setShowHintMenu(false);
@@ -86,7 +86,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
         if (levelData.revealedIndices.includes(i)) {
           initialGuesses[i] = char;
         } else {
-          missingLetters.push(char);
+          missingLetters.push(normalizeHebrewChar(char));
           if (firstEmptyIdx === -1) firstEmptyIdx = i;
         }
       }
@@ -209,30 +209,57 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   }, [levelData, userState.cellGuesses]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-hidden" dir="rtl">
+    <div className="flex flex-col h-full bg-gradient-to-b from-indigo-950 via-purple-900 to-slate-900 overflow-hidden" dir="rtl">
+      {/* Event Theme Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/20 blur-[100px] rounded-full mix-blend-screen"></div>
+        <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-fuchsia-500/10 blur-[120px] rounded-full mix-blend-screen"></div>
+        <div className="absolute top-[40%] left-[20%] w-[20%] h-[20%] bg-amber-500/10 blur-[80px] rounded-full mix-blend-screen"></div>
+      </div>
+
       {/* Header Area */}
-      <div className="flex items-center justify-between p-4 bg-white shadow-sm border-b border-slate-200 shrink-0">
-        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-          <i className="fa-solid fa-arrow-right"></i>
+      <div className="flex items-center justify-between p-4 bg-indigo-950/50 backdrop-blur-md border-b border-white/10 shrink-0 z-10 relative">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-colors">          <i className="fa-solid fa-arrow-right"></i>
         </button>
+
+        <div className="flex flex-col">
         <div className="flex items-center gap-2">
-          <i className="fa-solid fa-layer-group text-blue-600"></i>
-          <span className="font-black text-slate-800">סוליטר צופן</span>
+              <i className="fa-solid fa-crown text-amber-400 text-sm"></i>
+              <span className="font-black text-white tracking-wide">טורניר סוליטר</span>
+            </div>
+            <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-widest">Special Event</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1" dir="ltr">
-          {Array.from({ length: userState.maxMistakes }).map((_, i) => (
-            <div key={i} className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-              i < userState.mistakes ? 'border-rose-500 bg-rose-50 text-rose-500' : 'border-slate-200'
+
+        <div className="flex items-center gap-4">
+          {/* Mistakes Indicator */}
+          <div className="flex items-center gap-1 bg-black/20 px-3 py-1.5 rounded-full border border-white/5" dir="ltr">
+            {Array.from({ length: userState.maxMistakes }).map((_, i) => (
+              <div key={i} className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                i < userState.mistakes ? 'border-rose-500 bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'border-white/20 bg-transparent'
             }`}>
-              {i < userState.mistakes && <i className="fa-solid fa-xmark text-[8px] sm:text-[10px]"></i>}
+                {i < userState.mistakes && <i className="fa-solid fa-xmark text-[8px] sm:text-[10px] text-white"></i>}
             </div>
           ))}
+          </div>
+
+          {/* Hint Button in Header */}
+          <button 
+            onClick={() => setShowHintMenu(true)}
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all relative"
+          >
+            <i className="fa-solid fa-lightbulb text-lg"></i>
+            <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border-2 border-indigo-950 shadow-sm">
+              {hintsRemaining}
+            </span>
+          </button>
         </div>
       </div>
 
       {/* Board Area */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center relative">
-        <div className="w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 ease-out">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center relative z-10">
+        <div className="w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 ease-out bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-2xl border border-white/20">
           <Board 
             level={levelData} 
             userState={userState} 
@@ -258,11 +285,17 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
         
         {/* Hint Menu Overlay */}
         {showHintMenu && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-xs rounded-[2.5rem] shadow-2xl p-6 border border-slate-100 animate-in zoom-in-95 duration-300">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-xs rounded-[2.5rem] shadow-2xl p-6 border border-indigo-100 animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-black text-xl text-slate-800">רמזים ועזרה</h3>
-                <button onClick={() => setShowHintMenu(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                <div>
+                <h3 className="font-black text-xl text-indigo-900">עזרים לטורניר</h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <i className="fa-solid fa-lightbulb text-amber-500 text-xs"></i>
+                    <span className="text-xs font-bold text-slate-500">יש לך {hintsRemaining} רמזים</span>
+                  </div>
+                </div>
+                   <button onClick={() => setShowHintMenu(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
                   <i className="fa-solid fa-xmark"></i>
                 </button>
               </div>
@@ -353,15 +386,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       </div>
 
       {/* Solitaire Cards Area */}
-      <div className="shrink-0 relative">
-        {/* Hint Button Trigger */}
-        <button 
-          onClick={() => setShowHintMenu(true)}
-          className="absolute -top-14 left-4 w-12 h-12 rounded-2xl bg-white border-2 border-indigo-100 text-indigo-600 shadow-lg flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-10"
-        >
-          <i className="fa-solid fa-lightbulb text-xl"></i>
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">?</span>
-        </button>
+      <div className="shrink-0 relative z-10 bg-black/20 backdrop-blur-md border-t border-white/10 pt-4 pb-2">
 
         <SolitaireBoard 
           deck={deck} 

@@ -1,5 +1,5 @@
 import { GameLevel, Difficulty } from '../types';
-import { isHebrewLetter } from '../utils/textUtils';
+import { isHebrewLetter, normalizeHebrewChar, FINAL_TO_BASE } from '../utils/textUtils';
 
 const SOLITAIRE_QUOTES = [
   {
@@ -23,12 +23,13 @@ export const generateSolitairePuzzle = (difficulty: Difficulty, quoteIndex: numb
   const index = quoteIndex % SOLITAIRE_QUOTES.length;
   const selected = SOLITAIRE_QUOTES[index];
 
-    // Create a mapping for the cryptogram
+  // Create a mapping for the cryptogram using the original quote
   const hebrewLetterIndices = selected.quote.split('')
     .map((char, i) => ({ char, i }))
     .filter(item => isHebrewLetter(item.char));
     
-  const uniqueLetters = Array.from(new Set(hebrewLetterIndices.map(item => item.char)));
+  // Get unique base letters
+  const uniqueLetters = Array.from(new Set(hebrewLetterIndices.map(item => normalizeHebrewChar(item.char))));
   const numbers = Array.from({ length: 22 }, (_, i) => i + 1);
   for (let i = numbers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -37,29 +38,79 @@ export const generateSolitairePuzzle = (difficulty: Difficulty, quoteIndex: numb
   
   const mapping: Record<string, number> = {};
   uniqueLetters.forEach((char, i) => {
-    mapping[char] = numbers[i % numbers.length];
-  });
+    const num = numbers[i % numbers.length];
+    mapping[char] = num;
+    
+    // Also map the final letter to the same number
+    Object.entries(FINAL_TO_BASE).forEach(([final, base]) => {
+      if (base === char) {
+        mapping[final] = num;
+      }
+    });  });
 
   // Logic for revealed letters
   const totalLetters = hebrewLetterIndices.length;
-  let revealCount = 0;
+   
+  // Base reveal count: at least 5, or ~8% for longer quotes
+    let targetRevealCount = Math.max(5, Math.floor(totalLetters * 0.08));
   
-  if (totalLetters > 50) {
-    // 7-10% revealed
-    const percentage = 0.07 + (Math.random() * 0.03);
-    revealCount = Math.floor(totalLetters * percentage);
-  } else {
-    // For shorter quotes, reveal a small fixed amount (e.g., 2-4 letters)
-    revealCount = Math.min(4, Math.max(2, Math.floor(totalLetters * 0.08)));
+  // Ensure the remaining (missing) letters are a multiple of 5
+  while ((totalLetters - targetRevealCount) % 5 !== 0) {
+    targetRevealCount++;
   }
+  
+  // Cap at totalLetters just in case
+  targetRevealCount = Math.min(targetRevealCount, totalLetters);
 
   const revealedIndices: number[] = [];
-  const availableIndices = [...hebrewLetterIndices];
+    
+  // Group available indices by letter
+  const indicesByLetter: Record<string, number[]> = {};
+  hebrewLetterIndices.forEach(({ char, i }) => {
+    if (!indicesByLetter[char]) indicesByLetter[char] = [];
+    indicesByLetter[char].push(i);
+  });
+
+  const availableUniqueLetters = Object.keys(indicesByLetter);
   
-  for (let i = 0; i < revealCount && availableIndices.length > 0; i++) {
-    const randomIndex = Math.floor(Math.random() * availableIndices.length);
-    revealedIndices.push(availableIndices[randomIndex].i);
-    availableIndices.splice(randomIndex, 1);
+  // Shuffle available unique letters
+  for (let i = availableUniqueLetters.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availableUniqueLetters[i], availableUniqueLetters[j]] = [availableUniqueLetters[j], availableUniqueLetters[i]];
+  }
+
+  let remainingToReveal = targetRevealCount;
+
+  // 1. Try to pick unique letters first
+  for (const char of availableUniqueLetters) {
+    if (remainingToReveal === 0) break;
+    
+    const indices = indicesByLetter[char];
+    const randomIndex = indices[Math.floor(Math.random() * indices.length)];
+    revealedIndices.push(randomIndex);
+    
+    // Remove the chosen index
+    indicesByLetter[char] = indices.filter(idx => idx !== randomIndex);
+    
+    remainingToReveal--;
+  }
+
+  // 2. If we still need to reveal more letters, pick randomly from the remaining indices
+  if (remainingToReveal > 0) {
+    const remainingIndices: number[] = [];
+    Object.values(indicesByLetter).forEach(indices => {
+      remainingIndices.push(...indices);
+    });
+    
+    // Shuffle remaining indices
+    for (let i = remainingIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [remainingIndices[i], remainingIndices[j]] = [remainingIndices[j], remainingIndices[i]];
+    }
+    
+    for (let i = 0; i < remainingToReveal && i < remainingIndices.length; i++) {
+      revealedIndices.push(remainingIndices[i]);
+    }
   }
   
   // Basic cryptogram generation logic (simplified for solitaire)

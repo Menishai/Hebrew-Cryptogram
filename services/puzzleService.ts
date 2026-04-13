@@ -34,52 +34,52 @@
   const getDifficultyParams = (wordCount: number, difficulty: Difficulty): DifficultyParams => {
     if (wordCount <= 3) {
       switch (difficulty) {
-        case Difficulty.EASY: return { revealMin: 0.35, revealMax: 0.42, lockMin: 0, lockMax: 0, strikes: 5 };
-        case Difficulty.MEDIUM: return { revealMin: 0.29, revealMax: 0.36, lockMin: 0.03, lockMax: 0.06, strikes: 5 };
-        case Difficulty.HARD: return { revealMin: 0.21, revealMax: 0.27, lockMin: 0.10, lockMax: 0.14, strikes: 3 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.12, revealMax: 0.19, lockMin: 0.18, lockMax: 0.25, strikes: 3 };
+        case Difficulty.EASY: return { revealMin: 0.36, revealMax: 0.43, lockMin: 0, lockMax: 0, strikes: 5 };
+        case Difficulty.MEDIUM: return { revealMin: 0.30, revealMax: 0.37, lockMin: 0.03, lockMax: 0.06, strikes: 5 };
+        case Difficulty.HARD: return { revealMin: 0.22, revealMax: 0.28, lockMin: 0.10, lockMax: 0.14, strikes: 3 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.13, revealMax: 0.20, lockMin: 0.18, lockMax: 0.25, strikes: 3 };
       }
     } else if (wordCount === 4) {
       switch (difficulty) {
-        case Difficulty.EASY: return { revealMin: 0.31, revealMax: 0.37, lockMin: 0, lockMax: 0, strikes: 5 };
-        case Difficulty.MEDIUM: return { revealMin: 0.27, revealMax: 0.34, lockMin: 0.04, lockMax: 0.06, strikes: 5 };
-        case Difficulty.HARD: return { revealMin: 0.18, revealMax: 0.25, lockMin: 0.10, lockMax: 0.13, strikes: 3 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.11, revealMax: 0.18, lockMin: 0.19, lockMax: 0.25, strikes: 3 };
+        case Difficulty.EASY: return { revealMin: 0.32, revealMax: 0.38, lockMin: 0, lockMax: 0, strikes: 5 };
+        case Difficulty.MEDIUM: return { revealMin: 0.28, revealMax: 0.35, lockMin: 0.04, lockMax: 0.06, strikes: 5 };
+        case Difficulty.HARD: return { revealMin: 0.19, revealMax: 0.26, lockMin: 0.10, lockMax: 0.13, strikes: 3 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.12, revealMax: 0.19, lockMin: 0.19, lockMax: 0.25, strikes: 3 };
       }
     } else if (wordCount === 5) {
       switch (difficulty) {
-        case Difficulty.EASY: return { revealMin: 0.29, revealMax: 0.36, lockMin: 0, lockMax: 0.03, strikes: 6 };
-        case Difficulty.MEDIUM: return { revealMin: 0.25, revealMax: 0.32, lockMin: 0.06, lockMax: 0.07, strikes: 5 };
-        case Difficulty.HARD: return { revealMin: 0.18, revealMax: 0.24, lockMin: 0.13, lockMax: 0.15, strikes: 3 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.10, revealMax: 0.18, lockMin: 0.23, lockMax: 0.27, strikes: 3 };
+        case Difficulty.EASY: return { revealMin: 0.30, revealMax: 0.37, lockMin: 0, lockMax: 0.03, strikes: 6 };
+        case Difficulty.MEDIUM: return { revealMin: 0.26, revealMax: 0.33, lockMin: 0.06, lockMax: 0.07, strikes: 5 };
+        case Difficulty.HARD: return { revealMin: 0.18, revealMax: 0.25, lockMin: 0.13, lockMax: 0.15, strikes: 3 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.10, revealMax: 0.19, lockMin: 0.23, lockMax: 0.27, strikes: 3 };
       }
     } else if (wordCount === 6) {
       switch (difficulty) {
-        case Difficulty.EASY: return { revealMin: 0.28, revealMax: 0.35, lockMin: 0, lockMax: 0.04, strikes: 6 };
-        case Difficulty.MEDIUM: return { revealMin: 0.21, revealMax: 0.27, lockMin: 0.07, lockMax: 0.09, strikes: 5 };
-        case Difficulty.HARD: return { revealMin: 0.14, revealMax: 0.19, lockMin: 0.15, lockMax: 0.19, strikes: 3 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.07, revealMax: 0.13, lockMin: 0.26, lockMax: 0.30, strikes: 3 };
+        case Difficulty.EASY: return { revealMin: 0.29, revealMax: 0.36, lockMin: 0, lockMax: 0.04, strikes: 6 };
+        case Difficulty.MEDIUM: return { revealMin: 0.22, revealMax: 0.28, lockMin: 0.07, lockMax: 0.09, strikes: 5 };
+        case Difficulty.HARD: return { revealMin: 0.15, revealMax: 0.20, lockMin: 0.15, lockMax: 0.19, strikes: 3 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.08, revealMax: 0.14, lockMin: 0.26, lockMax: 0.30, strikes: 3 };
       }
     } else if (wordCount === 7) {
       switch (difficulty) {
-        case Difficulty.EASY: return { revealMin: 0.27, revealMax: 0.33, lockMin: 0.04, lockMax: 0.06, strikes: 6 };
-        case Difficulty.MEDIUM: return { revealMin: 0.19, revealMax: 0.25, lockMin: 0.09, lockMax: 0.12, strikes: 5 };
-        case Difficulty.HARD: return { revealMin: 0.12, revealMax: 0.16, lockMin: 0.20, lockMax: 0.24, strikes: 3 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.06, revealMax: 0.11, lockMin: 0.29, lockMax: 0.34, strikes: 3 };
+        case Difficulty.EASY: return { revealMin: 0.27, revealMax: 0.34, lockMin: 0.04, lockMax: 0.06, strikes: 6 };
+        case Difficulty.MEDIUM: return { revealMin: 0.19, revealMax: 0.26, lockMin: 0.09, lockMax: 0.12, strikes: 5 };
+        case Difficulty.HARD: return { revealMin: 0.13, revealMax: 0.17, lockMin: 0.20, lockMax: 0.24, strikes: 3 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.07, revealMax: 0.15, lockMin: 0.29, lockMax: 0.34, strikes: 3 };
       }
     } else if (wordCount >= 8 && wordCount <= 12) {
       switch (difficulty) {
-        case Difficulty.EASY: return { revealMin: 0.25, revealMax: 0.31, lockMin: 0.04, lockMax: 0.07, strikes: 6 };
-        case Difficulty.MEDIUM: return { revealMin: 0.17, revealMax: 0.22, lockMin: 0.10, lockMax: 0.12, strikes: 6 };
-        case Difficulty.HARD: return { revealMin: 0.11, revealMax: 0.15, lockMin: 0.21, lockMax: 0.25, strikes: 4 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.07, revealMax: 0.11, lockMin: 0.33, lockMax: 0.40, strikes: 3 };
+        case Difficulty.EASY: return { revealMin: 0.25, revealMax: 0.32, lockMin: 0.04, lockMax: 0.07, strikes: 6 };
+        case Difficulty.MEDIUM: return { revealMin: 0.17, revealMax: 0.23, lockMin: 0.10, lockMax: 0.12, strikes: 6 };
+        case Difficulty.HARD: return { revealMin: 0.11, revealMax: 0.16, lockMin: 0.21, lockMax: 0.25, strikes: 4 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.07, revealMax: 0.12, lockMin: 0.33, lockMax: 0.40, strikes: 3 };
       }
     } else { // 13+ words
       switch (difficulty) {
         case Difficulty.EASY: return { revealMin: 0.22, revealMax: 0.28, lockMin: 0.05, lockMax: 0.08, strikes: 7 };
-        case Difficulty.MEDIUM: return { revealMin: 0.14, revealMax: 0.20, lockMin: 0.12, lockMax: 0.15, strikes: 6 };
-        case Difficulty.HARD: return { revealMin: 0.09, revealMax: 0.13, lockMin: 0.24, lockMax: 0.29, strikes: 4 };
-        case Difficulty.VERY_HARD: return { revealMin: 0.06, revealMax: 0.09, lockMin: 0.37, lockMax: 0.43, strikes: 4 };
+        case Difficulty.MEDIUM: return { revealMin: 0.14, revealMax: 0.21, lockMin: 0.12, lockMax: 0.15, strikes: 6 };
+        case Difficulty.HARD: return { revealMin: 0.09, revealMax: 0.14, lockMin: 0.24, lockMax: 0.29, strikes: 4 };
+        case Difficulty.VERY_HARD: return { revealMin: 0.06, revealMax: 0.10, lockMin: 0.37, lockMax: 0.43, strikes: 4 };
       }
     }
     // Fallback
