@@ -96,11 +96,46 @@ export const useSolitaireLogic = () => {
     });
   }, []);
 
+  // הפונקציה החדשה שאוספת את הקלפים הקיימים, מערבבת ומחלקת מחדש
+  const reshuffleCurrentCards = useCallback(() => {
+    setGameState(prev => {
+      // 1. אוספים את כל הקלפים שנשארו בקופה ועל השולחן לארכיון אחד
+      const allRemainingCards = [...prev.deck, ...prev.pool.flat()];
+      
+      if (allRemainingCards.length === 0) return prev; // למקרה קצה
+
+      // 2. מערבבים אותם
+      const shuffled = [...allRemainingCards];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      // 3. בונים שולחן וקופה חדשים
+      const newPool: string[][] = [[], [], [], [], []];
+      const newDeck = [...shuffled];
+
+      // מחלקים 5 קלפים ראשונים לשולחן
+      for (let i = 0; i < 5; i++) {
+        if (newDeck.length > 0) {
+          newPool[i].push(newDeck.pop()!);
+        }
+      }
+
+      return {
+        deck: newDeck,
+        pool: newPool
+      };
+    });
+  }, []);
+
   return {
     deck: gameState.deck,
     pool: gameState.pool,
     initGame,
     drawCards,
     playCard,
-    resetDeck  };
+    resetDeck,
+    reshuffleCurrentCards // <--- אל תשכח שזה חייב להיות חשוף פה כדי שהמשחק ישתמש בזה
+  };
 };

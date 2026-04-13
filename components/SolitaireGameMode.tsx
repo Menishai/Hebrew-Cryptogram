@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GameLevel, UserState, FontSize } from '../types';
 import Board from './Board';
 import SolitaireBoard from './SolitaireBoard';
 import { useSolitaireLogic } from '../hooks/useSolitaireLogic';
 import { isHebrewLetter, normalizeHebrewChar } from '../utils/textUtils';
+import { AdMob, RewardItem } from '@capacitor-community/admob'; // <--- ייבוא AdMob
+
+// מזהה טסט של גוגל - חובה להחליף למזהה האמיתי שלך מ-AdMob לפני העלאה לחנות!
+const SOLITAIRE_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
 
 interface SolitaireGameModeProps {
   levelData: GameLevel;
@@ -22,10 +26,44 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   hintsRemaining,
   onSpendHints
 }) => {
-  const { deck, pool, initGame, drawCards, playCard, resetDeck } = useSolitaireLogic();
+  // שמנו לב שהוספנו את reshuffleCurrentCards למשיכה מה-Hook
+  const { deck, pool, initGame, drawCards, playCard, resetDeck, reshuffleCurrentCards } = useSolitaireLogic();
   const [showHintMenu, setShowHintMenu] = useState(false);
   const [isAuthorRevealed, setIsAuthorRevealed] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
+
+  // --- תחילת אזור AdMob ---
+  const pendingRewardRef = useRef<'hint' | 'reshuffle' | null>(null);
+
+  useEffect(() => {
+    const rewardListener = AdMob.addListener('onRewardedVideoAdReward', (reward: RewardItem) => {
+      if (pendingRewardRef.current === 'reshuffle') {
+        if (reshuffleCurrentCards) {
+          reshuffleCurrentCards();
+        }
+      }
+      pendingRewardRef.current = null;
+    });
+
+    return () => {
+      rewardListener.remove();
+    };
+  }, [reshuffleCurrentCards]);
+
+  const triggerReshuffleAd = async () => {
+    try {
+      pendingRewardRef.current = 'reshuffle';
+      await AdMob.prepareRewardVideoAd({ 
+        adId: SOLITAIRE_AD_UNIT_ID, 
+        isTesting: true // השאר על True עד שאתה בונה גרסה לחנות
+      });
+      await AdMob.showRewardVideoAd();
+    } catch (error) {
+      console.error('Failed to load ad:', error);
+      alert('לא ניתן לטעון פרסומת כרגע, ודא חיבור לאינטרנט ונסה שוב.');
+    }
+  };
+  // --- סוף אזור AdMob ---
 
   const [userState, setUserState] = useState<UserState>({
     score: 0,
@@ -83,7 +121,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
     for (let i = 0; i < levelData.quote.length; i++) {
       const char = levelData.quote[i];
       if (isHebrewLetter(char)) {
-        if (levelData.revealedIndices.includes(i)) {
+        if (levelData.revealedIndices && levelData.revealedIndices.includes(i)) {
           initialGuesses[i] = char;
         } else {
           missingLetters.push(normalizeHebrewChar(char));
@@ -107,7 +145,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   }, [levelData, initGame]);
 
   const handleCellSelect = useCallback((index: number) => {
-    if (levelData.revealedIndices.includes(index)) return;
+    if (levelData.revealedIndices && levelData.revealedIndices.includes(index)) return;
     if (userState.cellGuesses[index]) return; // Already guessed correctly
     setUserState(prev => ({ ...prev, selectedCellIndex: index }));
   }, [levelData, userState.cellGuesses]);
@@ -220,11 +258,12 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       {/* Header Area */}
       <div className="flex items-center justify-between p-4 bg-indigo-950/50 backdrop-blur-md border-b border-white/10 shrink-0 z-10 relative">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-colors">          <i className="fa-solid fa-arrow-right"></i>
-        </button>
+          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-colors">
+            <i className="fa-solid fa-arrow-right"></i>
+          </button>
 
-        <div className="flex flex-col">
-        <div className="flex items-center gap-2">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
               <i className="fa-solid fa-crown text-amber-400 text-sm"></i>
               <span className="font-black text-white tracking-wide">טורניר סוליטר</span>
             </div>
@@ -240,8 +279,8 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
                 i < userState.mistakes ? 'border-rose-500 bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'border-white/20 bg-transparent'
             }`}>
                 {i < userState.mistakes && <i className="fa-solid fa-xmark text-[8px] sm:text-[10px] text-white"></i>}
-            </div>
-          ))}
+              </div>
+            ))}
           </div>
 
           {/* Hint Button in Header */}
@@ -289,13 +328,13 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
             <div className="bg-white w-full max-w-xs rounded-[2.5rem] shadow-2xl p-6 border border-indigo-100 animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                <h3 className="font-black text-xl text-indigo-900">עזרים לטורניר</h3>
+                  <h3 className="font-black text-xl text-indigo-900">עזרים לטורניר</h3>
                   <div className="flex items-center gap-1.5 mt-1">
                     <i className="fa-solid fa-lightbulb text-amber-500 text-xs"></i>
                     <span className="text-xs font-bold text-slate-500">יש לך {hintsRemaining} רמזים</span>
                   </div>
                 </div>
-                   <button onClick={() => setShowHintMenu(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                <button onClick={() => setShowHintMenu(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
                   <i className="fa-solid fa-xmark"></i>
                 </button>
               </div>
@@ -386,13 +425,15 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       </div>
 
       {/* Solitaire Cards Area */}
-      <div className="shrink-0 relative z-10 bg-black/20 backdrop-blur-md border-t border-white/10 pt-4 pb-2">
-
+      <div className="shrink-0 relative z-10 bg-black/20 backdrop-blur-md border-t border-white/10 pt-4 pb-2 flex flex-col items-center">
+        
+        {/* כפתור פרסומת לערבוב מחדש (AdMob) */}
         <SolitaireBoard 
           deck={deck} 
           pool={pool} 
           drawCards={drawCards} 
           onCardClick={handleCardClick} 
+          onReshuffleAdClick={triggerReshuffleAd}
         />
       </div>
     </div>

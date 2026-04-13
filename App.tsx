@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.7';
+const APP_VERSION = '1.5.72';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
