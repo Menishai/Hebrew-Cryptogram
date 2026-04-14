@@ -59,8 +59,8 @@ const BoardCell: React.FC<BoardCellProps> = ({
   
   // Adjusted flexible sizing: higher minimums to prevent "too small" cells
   const flexStyle = isFlexible ? {
-    width: 'clamp(34px, 9vw, 64px)',
-    height: 'clamp(44px, 12vw, 84px)',
+    width: 'clamp(40px, 9vw, 64px)',
+    height: 'clamp(52px, 12vw, 84px)',
     minWidth: '0'
   } : {};
 
@@ -121,7 +121,7 @@ const BoardCell: React.FC<BoardCellProps> = ({
       }`}></div>
 
       {/* Number label below the cell */}
-      <span className={`text-[11px] md:text-[13px] mt-0.5 md:mt-1.5 font-black h-4 md:h-5 transition-all duration-300 ${
+      <span className={`text-[12px] md:text-[13px] mt-0.5 md:mt-1.5 font-black h-2 md:h-5 transition-all duration-300 ${
         (isSelected && !isHintMode && !isLockedHintMode) ? 'text-blue-900 scale-125 font-black' : 
         (isSameNumAsSelected ? 'text-blue-600 font-extrabold scale-110' : 'text-slate-500')
       } ${(isCompleted || isLocked) && !isLockedHintMode ? 'opacity-0 scale-50' : 'opacity-100 scale-100'} ${isLockedHintMode && isLocked ? 'text-amber-800 font-black scale-110' : ''} ${isFlexible ? 'text-[clamp(9px,3vw,13px)]' : ''}`}>
