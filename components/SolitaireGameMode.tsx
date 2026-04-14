@@ -12,8 +12,8 @@ const SOLITAIRE_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
 interface SolitaireGameModeProps {
   levelData: GameLevel;
   onBack: () => void;
-  onWin: (mistakes: number) => void;
-  onLose: () => void;
+  onWin: (mistakes: number, finalState: UserState) => void;
+  onLose: (finalState: UserState) => void;
   hintsRemaining: number;
   onSpendHints: (amount: number) => boolean;
   fontSize: FontSize;
@@ -31,6 +31,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   // שמנו לב שהוספנו את reshuffleCurrentCards למשיכה מה-Hook
   const { deck, pool, initGame, drawCards, playCard, resetDeck, reshuffleCurrentCards } = useSolitaireLogic();
   const [showHintMenu, setShowHintMenu] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [isAuthorRevealed, setIsAuthorRevealed] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
 
@@ -190,8 +191,9 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       });
 
       if (isWin) {
-        setUserState(prev => ({ ...prev, cellGuesses: newGuesses, cellFeedback: newFeedback, selectedCellIndex: null }));
-        setTimeout(() => onWin(mistakes), 500);
+        const finalState = { ...userState, cellGuesses: newGuesses, cellFeedback: newFeedback, selectedCellIndex: null };
+        setUserState(finalState);
+        setTimeout(() => onWin(mistakes, finalState), 500);
         return;
       }
 
@@ -238,7 +240,12 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       }, 800);
 
       if (newMistakes >= maxMistakes) {
-        setTimeout(() => onLose(), 500);
+        const finalState = { 
+          ...userState, 
+          mistakes: newMistakes, 
+          cellFeedback: { ...userState.cellFeedback, [selectedCellIndex]: 'wrong' as const } 
+        };
+        setTimeout(() => onLose(finalState), 500);
       }
     }
   }, [userState, levelData, playCard, onWin, onLose]);
@@ -311,6 +318,15 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
             <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border-2 border-indigo-950 shadow-sm">
               {hintsRemaining}
             </span>
+          </button>
+          
+          {/* Help Button */}
+          <button 
+            onClick={() => setShowHelp(true)}
+            className="w-10 h-10 rounded-xl bg-white/10 text-white hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all active:scale-95"
+            title="איך משחקים?"
+          >
+            <i className="fa-solid fa-question text-lg"></i>
           </button>
         </div>
       </div>
@@ -466,7 +482,74 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
           onCardClick={handleCardClick} 
           onReshuffleAdClick={triggerReshuffleAd}
         />
-      </div>
+        </div>
+                {/* Help Modal */}
+        {showHelp && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-indigo-100 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
+                    <i className="fa-solid fa-circle-info text-2xl"></i>
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-800">איך משחקים סוליטר?</h2>
+                </div>
+                <button onClick={() => setShowHelp(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-1 space-y-6 text-right custom-scrollbar">
+                <div className="space-y-3">
+                  <h3 className="font-black text-indigo-600 flex items-center gap-2">
+                    <i className="fa-solid fa-layer-group"></i>
+                    הקופה והערימות
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                    בכל פעם שולפים קלפים מהקופה (משמאל). הקלפים נערמים ב-5 ערימות. רק הקלף העליון בכל ערימה זמין לשימוש.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-black text-indigo-600 flex items-center gap-2">
+                    <i className="fa-solid fa-i-cursor"></i>
+                    בחירת משבצת
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                    לחצו על משבצת ריקה בלוח כדי לסמן אותה. לאחר מכן, לחצו על קלף מהערימות כדי לנסות להתאים אותו למשבצת.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-black text-indigo-600 flex items-center gap-2">
+                    <i className="fa-solid fa-hashtag"></i>
+                    חוק המספרים
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                    כמו במשחק הרגיל, כל מספר מייצג אות. אם תתאימו אות נכונה למספר, כל המשבצות עם אותו מספר יתמלאו בבת אחת!
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-black text-rose-500 flex items-center gap-2">
+                    <i className="fa-solid fa-heart-crack"></i>
+                    פסילות
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                    טעות בהתאמה תעלה לכם בפסילה. צברתם 3 פסילות? המשחק נגמר. השתמשו ברמזים כדי לבטל פסילות או לערבב את הקופה.
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowHelp(false)}
+                className="mt-8 w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 transition-all active:scale-95"
+              >
+                הבנתי, בואו נמשיך!
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 };

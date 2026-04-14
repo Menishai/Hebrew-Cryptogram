@@ -18,12 +18,12 @@ import ShopModal from './components/ShopModal';
 import SplashScreen from './components/SplashScreen';
 import SolitaireGameMode from './components/SolitaireGameMode';
 import { useGameAudio } from './hooks/useGameAudio';
-import { normalizeHebrewChar, isHebrewLetter } from './utils/textUtils';
+import { normalizeHebrewChar, isHebrewLetter, isEventTime } from './utils/textUtils';
 import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.73';
+const APP_VERSION = '1.5.8';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -1383,7 +1383,8 @@ const handleRevealAuthorOption = useCallback(() => {
       if (!levelData) {
         setStatus(GameStatus.LOADING);
         try {
-          const newLevel = generateSolitairePuzzle(Difficulty.MEDIUM, stats.solitaireQuoteIndex || 0);
+          const nextIndex = stats.solitaireQuoteIndex || 0;
+          const newLevel = generateSolitairePuzzle(Difficulty.MEDIUM, nextIndex);
           setLevelData(newLevel);
           initLevelState(newLevel, Difficulty.MEDIUM);
           setStatus(GameStatus.PLAYING);
@@ -1394,7 +1395,7 @@ const handleRevealAuthorOption = useCallback(() => {
         }
       }
     }
-  }, [currentScreen, levelData, initLevelState]);
+  }, [currentScreen, levelData, initLevelState, stats.solitaireQuoteIndex]);
 
   const startSolitaireGame = useCallback(() => {
     setStatus(GameStatus.LOADING);
@@ -1414,6 +1415,8 @@ const handleRevealAuthorOption = useCallback(() => {
   const handleGameOverAction = () => {
     if (levelData?.isDaily) {
       setCurrentScreen(Screen.DAILY_QUIZ);
+      } else if (levelData?.id.startsWith('solitaire-')) {
+      startSolitaireGame();
     } else {
       startNewGame();
     }
@@ -1631,40 +1634,60 @@ onSolitaireEvent={() => {
             ) : currentScreen === Screen.ACHIEVEMENTS ? (
               <AchievementsScreen key="achievements-screen" stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
             ) : currentScreen === Screen.SOLITAIRE ? (
-              levelData ? (
-<SolitaireGameMode 
-                key="solitaire-screen"
-                levelData={levelData} 
-                fontSize={fontSize}
-                onBack={() => setCurrentScreen(Screen.HOME)} 
-                onWin={(mistakes) => {
-                  setStatus(GameStatus.WON);
-                      setStats(prev => {
+levelData ? (
+                <SolitaireGameMode 
+                  key={`solitaire-${levelData.id}`}
+                  levelData={levelData} 
+                  fontSize={fontSize}
+                  onBack={() => setCurrentScreen(Screen.HOME)} 
+                  onWin={(mistakes, finalState) => {
+                    setUserState(finalState);
+                    setStatus(GameStatus.WON);
+                    setIsOverlayVisible(true);
+                      
+                      // הנה השורה שהייתה חסרה!
+                      const hasPlayedTrial = localStorage.getItem('hasPlayedSolitaireTrial') === 'true';
+                      const eventActive = isEventTime(new Date());
+                      
+                      if (!eventActive && !hasPlayedTrial) {
+                        localStorage.setItem('hasPlayedSolitaireTrial', 'true');
+                    }
+                        setCurrentScreen(Screen.PLAYING);
+                    
+                    setStats(prev => {
                       const newStats = { ...prev, solitaireQuoteIndex: (prev.solitaireQuoteIndex || 0) + 1 };
                       persistStats(newStats);
                       return newStats;
                     });
-                  setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show win overlay
-                }} 
-                onLose={() => {
-                  setStatus(GameStatus.LOST);
-                  setCurrentScreen(Screen.PLAYING); // Go back to normal playing screen to show lose overlay
-                }} 
+                  }} 
+                  onLose={(finalState) => {
+                    setUserState(finalState);
+                    setStatus(GameStatus.LOST);
+                    setIsOverlayVisible(true);
+                    
+                      const hasPlayedTrial = localStorage.getItem('hasPlayedSolitaireTrial') === 'true';
+                      const eventActive = isEventTime(new Date());
+                      
+                      if (!eventActive && !hasPlayedTrial) {
+                        localStorage.setItem('hasPlayedSolitaireTrial', 'true');
+                    }
+                      setCurrentScreen(Screen.PLAYING);
+                    }} 
                   hintsRemaining={stats.hintsRemaining}
                   onSpendHints={(amount) => {
                     if (stats.hintsRemaining >= amount) {
                       setStats(prev => {
                         const newStats = { ...prev, hintsRemaining: prev.hintsRemaining - amount };
-                      persistStats(newStats);
-                      return newStats;
-                    });
-                    return true;
-                  }
-                  setShowShop(true);
-                  return false;
-                }}
-              />
-                ) : (
+                        persistStats(newStats);
+                        return newStats;
+                      });
+                      return true;
+                    }
+                    setShowShop(true);
+                    return false;
+                  }}
+                />
+              ) : (
                 <div key="solitaire-loader" className="flex flex-col items-center justify-center h-full bg-slate-50">
                   <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                   <p className="text-slate-500 font-bold">טוען סוליטר...</p>
