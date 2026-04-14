@@ -32,35 +32,52 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   const [isAuthorRevealed, setIsAuthorRevealed] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
 
-  // --- תחילת אזור AdMob ---
+ // --- תחילת אזור AdMob ---
   const pendingRewardRef = useRef<'hint' | 'reshuffle' | null>(null);
+  const [isAdReady, setIsAdReady] = useState(false); // המשתנה שזוכר אם הפרסומת מוכנה
 
   useEffect(() => {
+    const preloadAd = async () => {
+      try {
+        await AdMob.prepareRewardVideoAd({ 
+          adId: SOLITAIRE_AD_UNIT_ID, 
+          isTesting: true 
+        });
+        setIsAdReady(true);
+      } catch (error) {
+        console.error('Failed to preload ad:', error);
+      }
+    };
+
+    preloadAd();
+
     const rewardListener = AdMob.addListener('onRewardedVideoAdReward', (reward: RewardItem) => {
       if (pendingRewardRef.current === 'reshuffle') {
         if (reshuffleCurrentCards) {
           reshuffleCurrentCards();
         }
+        alert('תודה שצפית! הקלפים נאספו ועורבבו מחדש.');
       }
       pendingRewardRef.current = null;
     });
 
+    const dismissListener = AdMob.addListener('onRewardedVideoAdDismissed', () => {
+      setIsAdReady(false);
+      preloadAd();
+    });
+
     return () => {
       rewardListener.remove();
+      dismissListener.remove();
     };
-  }, [reshuffleCurrentCards]);
+  }, [reshuffleCurrentCards]); // שים לב שהורדנו מפה את onEarnHint
 
   const triggerReshuffleAd = async () => {
-    try {
+    if (isAdReady) {
       pendingRewardRef.current = 'reshuffle';
-      await AdMob.prepareRewardVideoAd({ 
-        adId: SOLITAIRE_AD_UNIT_ID, 
-        isTesting: true // השאר על True עד שאתה בונה גרסה לחנות
-      });
       await AdMob.showRewardVideoAd();
-    } catch (error) {
-      console.error('Failed to load ad:', error);
-      alert('לא ניתן לטעון פרסומת כרגע, ודא חיבור לאינטרנט ונסה שוב.');
+    } else {
+      alert('הפרסומת עדיין נטענת, אנא המתן שנייה ונסה שוב.');
     }
   };
   // --- סוף אזור AdMob ---
@@ -247,7 +264,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
   }, [levelData, userState.cellGuesses]);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-indigo-950 via-purple-900 to-slate-900 overflow-hidden" dir="rtl">
+    <div className="flex flex-col h-full bg-gradient-to-b from-indigo-950 via-purple-500 to-slate-800 overflow-hidden" dir="rtl">
       {/* Event Theme Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/20 blur-[100px] rounded-full mix-blend-screen"></div>
@@ -314,7 +331,6 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
           {isAuthorRevealed && (
             <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="inline-flex flex-col items-center">
-                <div className="h-px w-12 bg-slate-200 mb-3"></div>
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">המקור / הדובר</p>
                 <p className="text-slate-800 font-black text-lg">{levelData.author}</p>
               </div>

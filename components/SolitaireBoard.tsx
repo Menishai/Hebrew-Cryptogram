@@ -70,7 +70,6 @@ const SolitaireBoard: React.FC<SolitaireBoardProps> = ({
         </button>
       </div>
 
-
       {/* Pool (Middle) */}
       <div className="flex gap-2 sm:gap-3">
         {pool.map((stack, index) => {

@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.72';
+const APP_VERSION = '1.5.73';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -1632,7 +1632,7 @@ onSolitaireEvent={() => {
               <AchievementsScreen key="achievements-screen" stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
             ) : currentScreen === Screen.SOLITAIRE ? (
               levelData ? (
-                <SolitaireGameMode 
+<SolitaireGameMode 
                 key="solitaire-screen"
                 levelData={levelData} 
                 onBack={() => setCurrentScreen(Screen.HOME)} 
