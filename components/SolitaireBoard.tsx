@@ -55,7 +55,7 @@ const SolitaireBoard: React.FC<SolitaireBoardProps> = ({
           className={`absolute inset-0 rounded-xl flex flex-col items-center justify-center transition-all z-10 ${
             deck.length > 0
               ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-500 active:translate-y-[2px]'
-              : 'bg-slate-200 border-2 border-dashed border-slate-300 text-slate-400 opacity-60 cursor-not-allowed'
+              : 'bg-slate-300 border-2 border-dashed border-slate-300 text-slate-400 opacity-60 cursor-not-allowed'
           }`}
         >
           {deck.length > 0 ? (

@@ -122,7 +122,7 @@ const HintModal: React.FC<HintModalProps> = ({
           {isAdReady ? (
             <>
               <i className="fa-solid fa-video"></i>
-              <span>צפה בוידאו וקבל רמז 1</span>
+              <span>צפה בוידאו וקבל מטבע לרמז 1</span>
             </>
           ) : (
             <>

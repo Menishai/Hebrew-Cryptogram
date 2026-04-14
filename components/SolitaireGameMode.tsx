@@ -314,7 +314,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       </div>
 
       {/* Board Area */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center relative z-10">
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col items-center relative z-10">
         <div className="w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 ease-out bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-2xl border border-white/20">
           <Board 
             level={levelData} 
@@ -441,8 +441,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       </div>
 
       {/* Solitaire Cards Area */}
-      <div className="shrink-0 relative z-10 bg-black/20 backdrop-blur-md border-t border-white/10 pt-4 pb-2 flex flex-col items-center">
-        
+<div className="shrink-0 relative z-10 bg-black/20 backdrop-blur-md border-t border-white/10 pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex flex-col items-center">        
         {/* כפתור פרסומת לערבוב מחדש (AdMob) */}
         <SolitaireBoard 
           deck={deck} 

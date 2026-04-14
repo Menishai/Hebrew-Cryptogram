@@ -1434,7 +1434,7 @@ const handleRevealAuthorOption = useCallback(() => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex flex-col h-full w-full absolute inset-0"
-            style={{ paddingTop: 'max(env(safe-area-inset-top), 45px)' }}
+            style={{ paddingTop: 'max(env(safe-area-inset-top), 30px)' }}
           >
             {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
             {showShop && (
