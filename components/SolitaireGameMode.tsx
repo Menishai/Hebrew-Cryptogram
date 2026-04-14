@@ -372,20 +372,21 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-indigo-200 shadow-sm">
-                    <span className="font-black text-indigo-600 text-xs">2</span>
-                    <i className="fa-solid fa-coins text-amber-500 text-[10px]"></i>
+                    <span className="font-black text-indigo-600 text-s">2</span>
+                    <i className="fa-solid fa-coins text-amber-500 text-[14px]"></i>
                   </div>
                 </button>
 
                 <button 
                   onClick={handleUndoMistake}
                   disabled={userState.mistakes === 0}
-                  className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-colors ${
+                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-colors ${
                     userState.mistakes > 0 
                       ? 'bg-rose-50 border-rose-100 hover:bg-rose-100' 
                       : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
                   }`}
                 >
+                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-md">
                     <i className="fa-solid fa-heart-circle-check"></i>
                   </div>
@@ -393,23 +394,36 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
                     <p className="font-black text-slate-800 text-sm">ביטול פסילה</p>
                     <p className="text-[10px] text-slate-500 font-bold">מחק טעות אחת שצברת</p>
                   </div>
+                </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-indigo-200 shadow-sm">
+                    <span className="font-black text-indigo-600 text-s">1</span>
+                    <i className="fa-solid fa-coins text-amber-500 text-[14px]"></i>
+                  </div>
+                </div>
                 </button>
 
                 <button 
                   onClick={handleRevealAuthor}
                   disabled={isAuthorRevealed}
-                  className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-colors ${
+                  className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-colors ${
                     !isAuthorRevealed 
                       ? 'bg-amber-50 border-amber-100 hover:bg-amber-100' 
                       : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
                   }`}
                 >
+                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md">
                     <i className="fa-solid fa-user-tag"></i>
                   </div>
                   <div className="text-right">
                     <p className="font-black text-slate-800 text-sm">גלה את המקור</p>
                     <p className="text-[10px] text-slate-500 font-bold">מי הדובר או מה המקור?</p>
+                  </div>
+                </div>
+                    <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-indigo-200 shadow-sm">
+                    <span className="font-black text-indigo-600 text-s">1</span>
+                    <i className="fa-solid fa-coins text-amber-500 text-[14px]"></i>
                   </div>
                 </button>
               </div>
