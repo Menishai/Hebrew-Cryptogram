@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { Statistics } from '../types';
+import { Statistics, QuoteCategory } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface StatsScreenProps {
@@ -11,7 +11,23 @@ interface StatsScreenProps {
 const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'collection'>('overview');
   const [showSkillInfo, setShowSkillInfo] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<QuoteCategory | 'all'>('all');
   
+  const categories: { id: QuoteCategory | 'all', label: string, icon: string, color: string }[] = [
+    { id: 'all', label: 'הכל', icon: 'fa-layer-group', color: 'text-slate-500' },
+    { id: 'proverb', label: 'פתגמים', icon: 'fa-comment-dots', color: 'text-blue-500' },
+    { id: 'song', label: 'שירים', icon: 'fa-music', color: 'text-emerald-500' },
+    { id: 'source', label: 'מקורות', icon: 'fa-book-open', color: 'text-amber-600' },
+    { id: 'famous', label: 'מפורסמים', icon: 'fa-star', color: 'text-purple-500' },
+    { id: 'sports', label: 'ספורט', icon: 'fa-basketball', color: 'text-orange-500' },
+    { id: 'cinema', label: 'קולנוע', icon: 'fa-film', color: 'text-rose-500' },
+  ];
+
+  const filteredQuotes = useMemo(() => {
+    if (selectedCategory === 'all') return stats.usedQuotes;
+    return stats.usedQuotes.filter(q => q.category === selectedCategory);
+  }, [stats.usedQuotes, selectedCategory]);
+
   const winRate = stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
   
   const accuracyRate = useMemo(() => {
@@ -282,7 +298,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                     </ResponsiveContainer>
                   </div>
                 )}
-                
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex items-center gap-3">
@@ -318,16 +334,34 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
             </div>
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-300">
-              {stats.usedQuotes.length === 0 ? (
+              {/* Category Filter Buttons */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex flex-col items-center justify-center min-w-[70px] h-[70px] rounded-2xl border transition-all shrink-0 ${
+                      selectedCategory === cat.id 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100 scale-105' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-blue-200'
+                    }`}
+                  >
+                    <i className={`fa-solid ${cat.icon} ${selectedCategory === cat.id ? 'text-white' : cat.color} text-lg mb-1`}></i>
+                    <span className="text-[10px] font-black">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {filteredQuotes.length === 0 ? (
                 <div className="bg-white p-12 rounded-[2.5rem] shadow-sm border border-slate-200 text-center">
                   <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
                     <i className="fa-solid fa-quote-right text-2xl"></i>
                   </div>
-                  <h3 className="text-lg font-black text-slate-800 mb-2">אין עדיין ציטוטים</h3>
-                  <p className="text-sm text-slate-500 font-medium">השלם שלבים כדי למלא את האוסף שלך!</p>
+                  <h3 className="text-lg font-black text-slate-800 mb-2">אין ציטוטים בקטגוריה זו</h3>
+                  <p className="text-sm text-slate-500 font-medium">המשך לשחק כדי לגלות ציטוטים חדשים!</p>
                 </div>
               ) : (
-                stats.usedQuotes.map((q, idx) => (
+                filteredQuotes.map((q, idx) => (
                   <div 
                     key={idx} 
                     className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden group hover:border-blue-200 transition-all hover:shadow-md"

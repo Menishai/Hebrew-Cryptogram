@@ -96,3 +96,11 @@ body {
   100% { transform: translateY(-40px); opacity: 0; }
 }
 .animate-float-hint { animation: float-hint 1s ease-out forwards; }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

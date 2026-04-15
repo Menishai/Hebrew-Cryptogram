@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.8';
+const APP_VERSION = '1.5.85';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -626,7 +626,7 @@ const handleRewardEarned = useCallback(() => {
       }
 
       if (won) {
-        const quoteObj = { text: levelInfo.quote, author: levelInfo.author, year: levelInfo.year };
+        const quoteObj = { text: levelInfo.quote, author: levelInfo.author, year: levelInfo.year, category: levelInfo.category };
         const alreadyExists = prev.usedQuotes.some(q => q.text === quoteObj.text);
         if (!alreadyExists) {
           newStats.usedQuotes = [quoteObj, ...prev.usedQuotes].slice(0, MAX_USED_QUOTES_HISTORY);

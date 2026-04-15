@@ -244,7 +244,6 @@ export const generateSolitairePuzzle = (difficulty: Difficulty, quoteIndex: numb
     quote: selected.quote,
     author: selected.author,
     year: selected.year,
-    difficulty,
     mapping,
     lockedIndices: [],   // No locked cells in solitaire mode
     revealedIndices,

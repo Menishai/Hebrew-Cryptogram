@@ -36,7 +36,7 @@ export interface Statistics {
   bestStreak: number;
   currentStreak: number;
   currentLevel: number;
-  usedQuotes: { text: string; author: string; year?: string }[];
+  usedQuotes: { text: string; author: string; year?: string; category?: QuoteCategory }[];
   hasCompletedTutorial: boolean; 
   perfectGames: number; 
   hintsRemaining: number; 
