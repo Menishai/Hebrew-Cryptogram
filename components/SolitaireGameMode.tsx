@@ -7,7 +7,7 @@ import { isHebrewLetter, normalizeHebrewChar } from '../utils/textUtils';
 import { AdMob, RewardItem } from '@capacitor-community/admob'; // <--- ייבוא AdMob
 
 // מזהה טסט של גוגל - חובה להחליף למזהה האמיתי שלך מ-AdMob לפני העלאה לחנות!
-const SOLITAIRE_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
+const SOLITAIRE_AD_UNIT_ID = 'ca-app-pub-2120452826670758/2399138090';
 
 interface SolitaireGameModeProps {
   levelData: GameLevel;

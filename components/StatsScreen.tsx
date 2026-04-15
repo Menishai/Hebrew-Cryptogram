@@ -195,6 +195,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                 
                 <div className="space-y-4">
                   {rewardGoals.map((goal, idx) => {
+                    const nextMilestone = calculateMilestone(goal.current, goal.step);
                     const progressInBatch = goal.current % goal.step;
                     const progressPercent = (progressInBatch / goal.step) * 100;
                     
@@ -203,7 +204,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                         <div className="flex justify-between items-end">
                           <span className="text-sm font-bold text-slate-700">{goal.label}</span>
                           <span className="text-[12px] font-black text-slate-500">
-                            {progressInBatch}/{goal.step}
+                            {goal.current}/{nextMilestone}
                           </span>
                         </div>
                         <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner relative">
