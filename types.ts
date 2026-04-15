@@ -85,6 +85,7 @@ export interface Statistics {
 }
 
 export interface GameLevel {
+  id?: string;
   quote: string;
   author: string;
   year?: string;

@@ -1375,7 +1375,7 @@ const handleRevealAuthorOption = useCallback(() => {
   useEffect(() => {
     if (currentScreen === Screen.SOLITAIRE) {
       // If we have levelData but it's not a solitaire level, clear it to trigger re-generation
-      if (levelData && !levelData.id.startsWith('solitaire-')) {
+      if (levelData && !levelData.id?.startsWith('solitaire-')) {
         setLevelData(null);
         return;
       }
@@ -1415,7 +1415,7 @@ const handleRevealAuthorOption = useCallback(() => {
   const handleGameOverAction = () => {
     if (levelData?.isDaily) {
       setCurrentScreen(Screen.DAILY_QUIZ);
-      } else if (levelData?.id.startsWith('solitaire-')) {
+    } else if (levelData?.id?.startsWith('solitaire-')) {
       startSolitaireGame();
     } else {
       startNewGame();

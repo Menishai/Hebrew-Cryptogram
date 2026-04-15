@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Statistics } from '../types';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface StatsScreenProps {
   stats: Statistics;
@@ -33,6 +34,15 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
     const challengeWeight = (stats.hardWinsCount * 15) + (stats.veryHardWinsCount * 30);
     return Math.floor(levelWeight + perfectionWeight + challengeWeight);
   }, [stats]);
+  
+  const hintData = useMemo(() => {
+    const data = [
+      { name: 'גילוי אותיות', value: stats.hintsByType?.letter || 0, color: '#3b82f6' }, // blue-500
+      { name: 'גילוי מחבר', value: stats.hintsByType?.author || 0, color: '#a855f7' }, // purple-500
+      { name: 'פתיחת נעולים', value: stats.hintsByType?.locked || 0, color: '#f43f5e' }, // rose-500
+    ];
+    return data.filter(item => item.value > 0);
+  }, [stats.hintsByType]);
 
   const calculateMilestone = (current: number, step: number) => {
     const next = (Math.floor(current / step) + 1) * step;
@@ -246,6 +256,33 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                   </div>
                 </div>
 
+                {hintData.length > 0 && (
+                  <div className="h-48 w-full mb-6">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={hintData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {hintData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold', fontSize: '12px' }}
+                          itemStyle={{ color: '#1e293b' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+                
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex items-center gap-3">
