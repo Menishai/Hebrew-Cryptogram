@@ -80,7 +80,7 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
       pendingRewardRef.current = 'reshuffle';
       await AdMob.showRewardVideoAd();
     } else {
-      alert('הפרסומת עדיין נטענת, אנא המתן שנייה ונסה שוב.');
+      alert('הפרסומת עדיין נטענת, אנא המתן 5 שניות ונסה שוב.');
     }
   };
   // --- סוף אזור AdMob ---

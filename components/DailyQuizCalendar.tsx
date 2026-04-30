@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DailyDayStats, Difficulty } from '../types';
 
@@ -10,8 +9,8 @@ interface DailyQuizCalendarProps {
 }
 
 const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress, initialMonth }) => {
-  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3
-  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(3, currentRealMonth));
+  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3, May = 4
+  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(4, currentRealMonth));
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [lockedDateSelected, setLockedDateSelected] = useState<boolean>(false);
   const [timeToNextQuiz, setTimeToNextQuiz] = useState<string>('');
@@ -19,7 +18,8 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   const months = [
     { name: 'פברואר', days: 28, value: 1 },
     { name: 'מרץ', days: 31, value: 2 },
-    { name: 'אפריל', days: 30, value: 3 }
+    { name: 'אפריל', days: 30, value: 3 },
+    { name: 'מאי', days: 31, value: 4 }
   ];
 
   const currentMonthData = months.find(m => m.value === selectedMonth) || months[0];
@@ -84,7 +84,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   };
 
   const nextMonth = () => {
-    if (selectedMonth < 3) setSelectedMonth(selectedMonth + 1);
+    if (selectedMonth < 4) setSelectedMonth(selectedMonth + 1);
   };
 
   const prevMonth = () => {
@@ -135,7 +135,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
              <p className="text-[16px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
              <button 
               onClick={nextMonth} 
-              disabled={selectedMonth === 3}
+              disabled={selectedMonth === 4}
               className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
              >
                <i className="fa-solid fa-chevron-left text-xl"></i>
@@ -208,13 +208,10 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
                                stats.status !== 'won' && 
                                (stats.lastAttemptDate === todayStr || (!stats.lastAttemptDate && dateStr === todayStr));
                                
-              // If the attempts were from a previous day and they didn't win, we treat them as 0 for display
-              // because they get a fresh start today.
               const attemptsUsed = (stats.status === 'won' || stats.lastAttemptDate === todayStr || (!stats.lastAttemptDate && dateStr === todayStr)) 
                                    ? stats.attempts 
                                    : 0;
 
-              // Logic for styling
               let bgClass = 'bg-white hover:border-blue-200 shadow-sm';
               let borderClass = isToday ? 'border-blue-600 shadow-lg shadow-blue-100 ring-2 ring-blue-50' : 'border-slate-100';
               let textClass = isToday ? 'text-blue-600' : 'text-slate-800';
@@ -232,7 +229,6 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
                 borderClass = 'border-slate-50';
               }
 
-              // Color stripe based on difficulty
               let difficultyColor = 'bg-blue-400';
               if (diff === Difficulty.EASY) difficultyColor = 'bg-green-400';
               if (diff === Difficulty.HARD) difficultyColor = 'bg-orange-400';
@@ -250,14 +246,12 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
                     ${borderClass} ${bgClass}
                   `}
                 >
-                  {/* Small colored dot indicating difficulty level */}
                   <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${difficultyColor}`}></div>
 
                   <span className={`text-base md:text-xl font-black ${textClass} mb-1`}>
                     {d}
                   </span>
 
-                  {/* Indicators centered */}
                   <div className="flex gap-1 h-2 items-center justify-center">
                     {!isFuture && (
                       Array.from({length: 3}).map((_, i) => (

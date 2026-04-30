@@ -9,9 +9,9 @@ export const isEventTime = (now: Date) => {
   const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 4 = Thursday, 5 = Friday, 6 = Saturday
   const hour = now.getHours();
   
-  if (day === 0 && hour >= 18) return true; // Thursday >= 18:00 // צריך להיות 4, 18
-  if (day === 3 || day === 6) return true;  // Friday, Saturday // צריך להיות 5, 6
-  if (day === 6 && hour < 17) return true;   // Sunday < 09:00 // צריך להיות 0, 9
+  if (day === 4 && hour >= 18) return true; // Thursday >= 18:00 // צריך להיות 4, 18
+  if (day === 5 || day === 6) return true;  // Friday, Saturday // צריך להיות 5, 6
+  if (day === 0 && hour < 9) return true;   // Sunday < 09:00 // צריך להיות 0, 9
   
   return false;
 };

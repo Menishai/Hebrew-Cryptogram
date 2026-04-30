@@ -176,7 +176,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       <div className="mt-12 md:mt-16 flex flex-col items-center gap-2 opacity-50">
-        <p className="text-slate-500 text-[11px] md:text-[12px] font-black uppercase tracking-widest">Version 1.5.85</p>
+        <p className="text-slate-500 text-[11px] md:text-[12px] font-black uppercase tracking-widest">Version 1.5.86</p>
       </div>
     </div>
   );
