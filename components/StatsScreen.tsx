@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Statistics, QuoteCategory } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -11,6 +10,7 @@ interface StatsScreenProps {
 const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'collection'>('overview');
   const [showSkillInfo, setShowSkillInfo] = useState(false);
+  const [showLetterStats, setShowLetterStats] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<QuoteCategory | 'all'>('all');
   
   const categories: { id: QuoteCategory | 'all', label: string, icon: string, color: string }[] = [
@@ -53,9 +53,9 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
   
   const hintData = useMemo(() => {
     const data = [
-      { name: 'גילוי אותיות', value: stats.hintsByType?.letter || 0, color: '#3b82f6' }, // blue-500
-      { name: 'גילוי מחבר', value: stats.hintsByType?.author || 0, color: '#a855f7' }, // purple-500
-      { name: 'פתיחת נעולים', value: stats.hintsByType?.locked || 0, color: '#f43f5e' }, // rose-500
+      { name: 'גילוי אותיות', value: stats.hintsByType?.letter || 0, color: '#3b82f6' },
+      { name: 'גילוי מחבר', value: stats.hintsByType?.author || 0, color: '#a855f7' },
+      { name: 'פתיחת נעולים', value: stats.hintsByType?.locked || 0, color: '#f43f5e' },
     ];
     return data.filter(item => item.value > 0);
   }, [stats.hintsByType]);
@@ -74,6 +74,45 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
 
   return (
     <div className="flex flex-col items-center h-full bg-slate-50 overflow-hidden" dir="rtl">
+      
+      {/* Letter Stats Modal (החלון החדש!) */}
+      {showLetterStats && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/40" onClick={() => setShowLetterStats(false)}>
+          <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 relative border-b-8 border-emerald-500 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowLetterStats(false)} className="absolute top-4 left-4 text-slate-400 hover:text-slate-600 transition-colors">
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl shrink-0 shadow-inner">
+              <i className="fa-solid fa-keyboard"></i>
+            </div>
+            <h3 className="text-xl font-black text-slate-800 mb-1 text-center shrink-0">האותיות שפיענחת</h3>
+            <p className="text-[13px] font-bold text-slate-500 text-center mb-6 shrink-0">כמה פעמים נתקלת בכל אות לאורך המשחק?</p>
+
+            <div className="overflow-y-auto custom-scrollbar pr-1 pb-2">
+              {(!stats.decodedLettersStats || Object.keys(stats.decodedLettersStats).length === 0) ? (
+                <div className="text-center text-slate-400 font-bold py-8 bg-slate-50 rounded-2xl border border-slate-100">
+                  <i className="fa-solid fa-ghost text-3xl text-slate-300 mb-3 block"></i>
+                  עדיין לא סיימת אף משחק!
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-3">
+                  {Object.entries(stats.decodedLettersStats)
+                    .sort((a, b) => b[1] - a[1]) // מיון מהכמות הגדולה לקטנה
+                    .map(([letter, count]) => (
+                      <div key={letter} className="bg-slate-50 rounded-xl py-3 flex flex-col items-center border border-slate-200 shadow-sm transition-all hover:bg-emerald-50 hover:border-emerald-200">
+                        <span className="text-xl font-black text-emerald-600 mb-1">{letter}</span>
+                        <span className="text-[10px] font-black text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-100 shadow-sm">
+                          {count}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Skill Rating Explanation Overlay */}
       {showSkillInfo && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-md bg-slate-900/40" onClick={() => setShowSkillInfo(false)}>
@@ -208,15 +247,12 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                           </span>
                         </div>
                         <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner relative">
-                          {/* Progress Bar */}
                           <div 
                             className={`h-full ${goal.color} transition-all duration-700 relative`} 
                             style={{ width: `${progressPercent}%` }}
                           >
                              <div className="absolute inset-0 bg-white/20 shimmer"></div>
                           </div>
-                          
-                          {/* Tick Marks */}
                           {goal.step > 1 && Array.from({ length: goal.step - 1 }).map((_, i) => (
                             <div 
                               key={i}
@@ -257,9 +293,18 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
               
               {/* Hint Statistics Card */}
               <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                <div className="flex items-center gap-3 mb-6 text-slate-800 font-black">
-                  <i className="fa-solid fa-lightbulb text-amber-500"></i>
-                  שימוש ברמזים
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3 text-slate-800 font-black">
+                    <i className="fa-solid fa-lightbulb text-amber-500"></i>
+                    שימוש ברמזים
+                  </div>
+                  {/* הכפתור החדש - גילוי אותיות */}
+                  <button 
+                    onClick={() => setShowLetterStats(true)}
+                    className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl text-[11px] font-black border border-emerald-200 hover:bg-emerald-100 transition-colors active:scale-95"
+                  >
+                    סטטיסטיקת אותיות <i className="fa-solid fa-keyboard"></i>
+                  </button>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -300,7 +345,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
                   </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-blue-500">
@@ -403,7 +448,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ stats, onBack }) => {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
+          background: #cbd5e1;
           border-radius: 10px;
         }
       `}</style>

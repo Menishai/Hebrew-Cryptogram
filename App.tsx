@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GameLevel, UserState, GameStatus, Difficulty, Screen, Statistics, FontSize, QuoteCategory, DailyDayStats } from './types';
 import { generateCryptogramPuzzle, generateDailyPuzzle } from './services/puzzleService';
@@ -23,7 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useBilling } from './hooks/useBilling';
 import { useRewardedAd } from './hooks/useRewardedAd';
 
-const APP_VERSION = '1.5.86';
+const APP_VERSION = '1.65';
 
 const DIFFICULTY_CONFIG = {
   [Difficulty.EASY]: { numRevealed: 0, maxMistakes: 5, hints: 3 },
@@ -57,11 +56,8 @@ const checkIfCellIsLocked = (
 ): boolean => {
   if (!levelData || status !== GameStatus.PLAYING) return false;
   
-  // New logic: Check if index is in the pre-calculated lockedIndices array
   if (!levelData.lockedIndices || !levelData.lockedIndices.includes(idx)) {
-    // Fallback for old saves or if lockedIndices is missing (though it shouldn't be with new logic)
     if (levelData.isLockChallenge && !levelData.lockedIndices) {
-       // ... keep old procedural logic if absolutely necessary, but better to just return false to avoid mixing logic
        return false; 
     }
     return false;
@@ -80,10 +76,8 @@ const checkIfCellIsLocked = (
     return !!(guesses[i] && normalizeHebrewChar(guesses[i]) === normalizeHebrewChar(levelData.quote[i]));
   };
   
-  // If the cell itself is already solved, it's not locked
   if (isSolvedAtAll(idx)) return false;
   
-  // Find neighbors
   const findAdjacentLetter = (start: number, direction: number) => {
     let current = start + direction;
     while (current >= 0 && current < levelData.quote.length) {
@@ -99,7 +93,6 @@ const checkIfCellIsLocked = (
 
   if (neighbors.length === 0) return false;
   
-  // Unlock if ANY neighbor is solved normally (by user, not hint)
   if (neighbors.some(n => isSolvedNormally(n))) return false;
 
   return true;
@@ -141,7 +134,6 @@ const App: React.FC = () => {
     }
   }, [currentScreen, levelData]);
 
-  // Inactivity logic
   const resetIdleTimer = useCallback(() => {
     setIsIdle(false);
     if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
@@ -180,7 +172,7 @@ const App: React.FC = () => {
     return saved === null ? true : saved === 'true';
   });
 
-    const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('cryptogram-notifications');
     return saved === 'true';
   });
@@ -248,7 +240,8 @@ const App: React.FC = () => {
         isSkipAnytimePurchased: !!parsed.isSkipAnytimePurchased,
         isSportsPackPurchased: !!parsed.isSportsPackPurchased,
         isCinemaPackPurchased: !!parsed.isCinemaPackPurchased,
-        dailyProgress: parsed.dailyProgress || {}
+        dailyProgress: parsed.dailyProgress || {},
+        decodedLettersStats: parsed.decodedLettersStats || {} // <--- Loading the letters stat!
       };
     } catch {
       return initialStats;
@@ -286,19 +279,12 @@ const App: React.FC = () => {
     }, 500);
   }, []);
 
-  // בלוק הוידאו!
-const handleRewardEarned = useCallback(() => {
-    
-    // 1. סוגרים את חלונית הרמזים מיד!
+  const handleRewardEarned = useCallback(() => {
     setShowHintMenu(false); 
-
-    // 2. מעדכנים את כמות הרמזים
     setUserState(prev => ({
       ...prev,
       hintsRemaining: prev.hintsRemaining + 1
     }));
-
-    // 3. מעדכנים את הסטטיסטיקות
     setStats(prev => {
       const newStats = { ...prev, hintsRemaining: prev.hintsRemaining + 1 };
       if (typeof persistStats === 'function') {
@@ -306,18 +292,14 @@ const handleRewardEarned = useCallback(() => {
       }
       return newStats;
     });
-
-    // 4. מציגים את הודעת הניצחון על הלוח הראשי
     setTimeout(() => {
       setRewardToast(true);
       playSound('win');
       setTimeout(() => setRewardToast(false), 3500); 
     }, 500);
-
   }, [playSound]);
 
   const { isAdReady, showAd } = useRewardedAd(handleRewardEarned);
-  // ==========================================
 
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DIFFICULTY, difficultySetting); }, [difficultySetting]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize); }, [fontSize]);
@@ -326,7 +308,7 @@ const handleRewardEarned = useCallback(() => {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.LAST_SCREEN, currentScreen); }, [currentScreen]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.ACTIVE_CATEGORIES, JSON.stringify(activeCategories)); }, [activeCategories]);
   
-    useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('cryptogram-notifications', String(notificationsEnabled));
     localStorage.setItem('cryptogram-notification-time', notificationTime);
     import('./utils/notifications').then(({ setupDailyNotification }) => {
@@ -419,7 +401,7 @@ const handleRewardEarned = useCallback(() => {
     playSound('win');
   };
 
-    const handlePurchaseBundle = () => {
+  const handlePurchaseBundle = () => {
     setStats(prev => {
       const newStats = { 
         ...prev, 
@@ -570,7 +552,8 @@ const handleRewardEarned = useCallback(() => {
     const isOldAttempt = dayStats && dayStats.status !== 'won' && 
                          ((dayStats.lastAttemptDate && dayStats.lastAttemptDate !== todayStr) || 
                           (!dayStats.lastAttemptDate && levelData.dailyDate !== todayStr));
-    return !dayStats || isOldAttempt || dayStats.attempts < 3;  }, [levelData, stats.dailyProgress]);
+    return !dayStats || isOldAttempt || dayStats.attempts < 3;  
+  }, [levelData, stats.dailyProgress]);
 
   const dailyAttemptsLeft = useMemo(() => {
     if (!levelData?.isDaily || !levelData.dailyDate) return 0;
@@ -579,7 +562,8 @@ const handleRewardEarned = useCallback(() => {
     const isOldAttempt = dayStats && dayStats.status !== 'won' && 
                          ((dayStats.lastAttemptDate && dayStats.lastAttemptDate !== todayStr) || 
                           (!dayStats.lastAttemptDate && levelData.dailyDate !== todayStr));
-    const used = isOldAttempt ? 0 : (dayStats?.attempts || 0);    return Math.max(0, 3 - used);
+    const used = isOldAttempt ? 0 : (dayStats?.attempts || 0);    
+    return Math.max(0, 3 - used);
   }, [levelData, stats.dailyProgress]);
 
   const updateStats = useCallback((won: boolean, levelInfo: GameLevel, difficulty: Difficulty, mistakesCount: number = 0, hintsUsedThisLevel: number = 0, hintsByTypeThisLevel?: { letter: number, author: number, locked: number }) => {
@@ -588,7 +572,6 @@ const handleRewardEarned = useCallback(() => {
       newStats.gamesPlayed += 1;
       newStats.totalMistakes += mistakesCount;
             
-      // Update global hint stats
       newStats.totalHintsUsed = (newStats.totalHintsUsed || 0) + hintsUsedThisLevel;
       if (hintsByTypeThisLevel) {
         const hbt = { ...(newStats.hintsByType || { letter: 0, author: 0, locked: 0 }) };
@@ -605,7 +588,6 @@ const handleRewardEarned = useCallback(() => {
         const dp = { ...(newStats.dailyProgress || {}) };
         const dayStats = dp[levelInfo.dailyDate] || { status: 'none', attempts: 0 };
                 
-        // Reset attempts if the last attempt was on a previous day and we haven't won
         const isOldAttempt = dayStats.status !== 'won' && 
                              ((dayStats.lastAttemptDate && dayStats.lastAttemptDate !== todayStr) || 
                               (!dayStats.lastAttemptDate && levelInfo.dailyDate !== todayStr));
@@ -626,6 +608,17 @@ const handleRewardEarned = useCallback(() => {
       }
 
       if (won) {
+        // --- NEW LOGIC: Record Letters for Stats ---
+        const updatedDecodedLetters = { ...(newStats.decodedLettersStats || {}) };
+        for (const char of levelInfo.quote) {
+          if (isHebrewLetter(char)) {
+            const normalizedChar = normalizeHebrewChar(char);
+            updatedDecodedLetters[normalizedChar] = (updatedDecodedLetters[normalizedChar] || 0) + 1;
+          }
+        }
+        newStats.decodedLettersStats = updatedDecodedLetters;
+        // ------------------------------------------
+
         const quoteObj = { text: levelInfo.quote, author: levelInfo.author, year: levelInfo.year, category: levelInfo.category };
         const alreadyExists = prev.usedQuotes.some(q => q.text === quoteObj.text);
         if (!alreadyExists) {
@@ -637,7 +630,6 @@ const handleRewardEarned = useCallback(() => {
         newStats.currentStreak += 1;
         newStats.bestStreak = Math.max(newStats.bestStreak, newStats.currentStreak);
         
-        // Marathon Tracking
         if (newStats.lastPlayedDate === todayStr) {
           newStats.gamesWonToday = (newStats.gamesWonToday || 0) + 1;
         } else {
@@ -646,12 +638,10 @@ const handleRewardEarned = useCallback(() => {
         }
         newStats.bestMarathon = Math.max(newStats.bestMarathon || 0, newStats.gamesWonToday);
 
-        // No Hints Tracking
         if (hintsUsedThisLevel === 0) {
           newStats.winsWithoutHints = (newStats.winsWithoutHints || 0) + 1;
         }
 
-        // Genre Tracking
         if (levelInfo.category) {
           newStats.winsByCategory = {
             ...(newStats.winsByCategory || {}),
@@ -683,8 +673,7 @@ const handleRewardEarned = useCallback(() => {
           }
         }
 
-                if (isDaily && levelInfo.dailyDate) {
-                // Daily Streak Tracking
+        if (isDaily && levelInfo.dailyDate) {
           if (newStats.lastDailyWinDate) {
             const lastWin = new Date(newStats.lastDailyWinDate);
             const currentWin = new Date(levelInfo.dailyDate);
@@ -749,7 +738,7 @@ const handleRewardEarned = useCallback(() => {
     });
     
     localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
-  }, []);
+  }, [persistStats]);
 
   const handleClaimAchievement = (id: string) => {
     setStats(prev => {
@@ -811,7 +800,7 @@ const handleRewardEarned = useCallback(() => {
     setIsLockedHintMode(false);
     playSound('undo');
     resetIdleTimer();
-  }, [history, status, userState.hintsRemaining, playSound, resetIdleTimer]);
+  }, [history, status, userState.hintsRemaining, playSound, resetIdleTimer, persistStats]);
 
   const handleRevealLockedOption = useCallback(() => {
     setShowHintMenu(false);
@@ -920,7 +909,7 @@ const handleRewardEarned = useCallback(() => {
       setTimeout(() => setPackExhaustedToast(false), 5500);
     }
     resetIdleTimer();
-  }, [stats.currentLevel, stats.hintsRemaining, resetIdleTimer]);
+  }, [stats.currentLevel, stats.hintsRemaining, resetIdleTimer, persistGameState]);
 
   const startNewGame = useCallback(async (forcedDifficulty?: Difficulty) => {
     setCurrentScreen(Screen.PLAYING);
@@ -957,14 +946,13 @@ const handleRewardEarned = useCallback(() => {
     const dayStats = stats.dailyProgress?.[dateStr];
     const todayStr = new Date().toISOString().split('T')[0];
     
-    // Only block if they failed 3 times TODAY. If it was a previous day, they get another chance.
-    // If lastAttemptDate is missing (old data), we assume the attempt was made on the puzzle's date.
     const isLockedToday = dayStats && 
                           dayStats.attempts >= 3 && 
                           dayStats.status !== 'won' && 
                           (dayStats.lastAttemptDate === todayStr || (!dayStats.lastAttemptDate && dateStr === todayStr));
                           
-    if (isLockedToday) {      setCurrentScreen(Screen.DAILY_QUIZ);
+    if (isLockedToday) {      
+      setCurrentScreen(Screen.DAILY_QUIZ);
       return;
     }
 
@@ -986,7 +974,6 @@ const handleRewardEarned = useCallback(() => {
           return;
         }
       } catch (e) {
-        // Ignore parse error, proceed to start fresh
       }
     }
 
@@ -1037,14 +1024,13 @@ const handleRewardEarned = useCallback(() => {
     setIsLockedHintMode(false);
   }, []);
 
-const handleRevealAuthorOption = useCallback(() => {
-    setShowHintMenu(false); // מעלימים את תפריט הרמזים
+  const handleRevealAuthorOption = useCallback(() => {
+    setShowHintMenu(false);
     if (userState.isAuthorRevealed || userState.hintsRemaining <= 0) return;
     
     playSound('hint');
     const newHints = userState.hintsRemaining - 1;
     
-    // מעדכנים את כמות הרמזים (אבל עדיין לא חושפים את המחבר במשחק עצמו!)
     setStats(s => {
       const n = { ...s, hintsRemaining: newHints };
       persistStats(n);
@@ -1058,16 +1044,15 @@ const handleRevealAuthorOption = useCallback(() => {
       hintsByTypeThisLevel: {
         ...(prev.hintsByTypeThisLevel || { letter: 0, author: 0, locked: 0 }),
         author: (prev.hintsByTypeThisLevel?.author || 0) + 1
-      }    }));
+      }    
+    }));
 
-    // הפתרון ל-Ghost Click באנדרואיד: משהים ממש מעט את פתיחת החלונית 
-    // כדי שאירוע הלחיצה יסתיים ולא יסגור אותה מיד
     setTimeout(() => {
       setShowAuthorModal(true);
     }, 50);
     
     resetIdleTimer();
-  }, [userState.isAuthorRevealed, userState.hintsRemaining, playSound, resetIdleTimer]);
+  }, [userState.isAuthorRevealed, userState.hintsRemaining, playSound, resetIdleTimer, persistStats]);
 
   const applyHintToIndex = useCallback((idx: number, isFromLockedMenu = false) => {
     if (!levelData || status !== GameStatus.PLAYING || userState.hintsRemaining <= 0) return;
@@ -1087,7 +1072,6 @@ const handleRevealAuthorOption = useCallback(() => {
           setTimeout(() => setIsBoardShaking(false), 400);
           return;
        }
-       // If it is locked and we are in locked hint mode, proceed to reveal
     } else if (cellLocked) {
       playSound('locked');
       setIsBoardShaking(true);
@@ -1142,7 +1126,8 @@ const handleRevealAuthorOption = useCallback(() => {
       hintsByTypeThisLevel: {
         ...(prev.hintsByTypeThisLevel || { letter: 0, author: 0, locked: 0 }),
         [isLockedHintMode ? 'locked' : 'letter']: (prev.hintsByTypeThisLevel?.[isLockedHintMode ? 'locked' : 'letter'] || 0) + 1
-      }    }));
+      }    
+    }));
 
     setIsHintMode(false);
     setIsLockedHintMode(false);
@@ -1154,7 +1139,7 @@ const handleRevealAuthorOption = useCallback(() => {
       });
     }, 1000);
     resetIdleTimer();
-  }, [levelData, status, userState, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked, isLockedHintMode, resetIdleTimer]);
+  }, [levelData, status, userState, playSound, updateStats, vibrationEnabled, currentLevelDifficulty, isCellLocked, isLockedHintMode, resetIdleTimer, persistStats]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
@@ -1371,10 +1356,8 @@ const handleRevealAuthorOption = useCallback(() => {
     setPreFetchedLevel(null);
   };
   
-    // Handle Solitaire Game Initialization when screen changes
   useEffect(() => {
     if (currentScreen === Screen.SOLITAIRE) {
-      // If we have levelData but it's not a solitaire level, clear it to trigger re-generation
       if (levelData && !levelData.id?.startsWith('solitaire-')) {
         setLevelData(null);
         return;
@@ -1422,7 +1405,6 @@ const handleRevealAuthorOption = useCallback(() => {
     }
   };
 
-// Only check for saved game when on the home screen to avoid blocking the main thread during gameplay
   const hasSavedGame = currentScreen === Screen.HOME ? !!localStorage.getItem(STORAGE_KEYS.GAME_STATE) : false;
 
   return (
@@ -1537,22 +1519,18 @@ const handleRevealAuthorOption = useCallback(() => {
               </div>
             )}
 
-{rewardToast && (
+            {rewardToast && (
               <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-[200] bg-gradient-to-r from-sky-400 to-blue-500 text-white pl-3 pr-6 py-3 rounded-full shadow-2xl font-black text-sm md:text-base animate-in zoom-in fade-in duration-300 flex items-center gap-3 border-2 border-white/30 whitespace-nowrap">
                 
-                {/* אייקון מתנה */}
                 <div className="bg-white/20 p-1.5 rounded-full flex items-center justify-center">
                   <i className="fa-solid fa-gift text-yellow-300 text-lg"></i>
                 </div>
                 
-                {/* טקסט ואייקון נורה */}
                 <span>תודה שצפית! זכית ברמז 1 במתנה</span>
                 <i className="fa-solid fa-lightbulb text-yellow-100 mr-1"></i>
 
-                {/* קו הפרדה עדין */}
                 <div className="w-px h-6 bg-white/30 mx-1"></div>
 
-                {/* כפתור סגירה X */}
                 <button 
                   onClick={() => setRewardToast(false)}
                   className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center transition-colors cursor-pointer"
@@ -1588,17 +1566,16 @@ const handleRevealAuthorOption = useCallback(() => {
                 onOpenShop={() => setShowShop(true)} 
                 currentLevel={stats.currentLevel || 1} 
                 hasUnclaimedAchievements={hasUnclaimedAchievements} 
-onSolitaireEvent={() => {
-    try {
-      // הוספנו את רמת הקושי והאינדקס!
-      const newPuzzle = generateSolitairePuzzle(Difficulty.MEDIUM, stats.solitaireQuoteIndex || 0); 
-      
-      setLevelData(newPuzzle); 
-      setCurrentScreen(Screen.SOLITAIRE);
-    } catch (error) {
-      console.error("Failed to load solitaire from button:", error);
-                }}}             
-                />
+                onSolitaireEvent={() => {
+                  try {
+                    const newPuzzle = generateSolitairePuzzle(Difficulty.MEDIUM, stats.solitaireQuoteIndex || 0); 
+                    setLevelData(newPuzzle); 
+                    setCurrentScreen(Screen.SOLITAIRE);
+                  } catch (error) {
+                    console.error("Failed to load solitaire from button:", error);
+                  }
+                }}             
+              />
             ) : currentScreen === Screen.STATS ? (
               <StatsScreen key="stats-screen" stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} />
             ) : currentScreen === Screen.DAILY_QUIZ ? (
@@ -1634,7 +1611,7 @@ onSolitaireEvent={() => {
             ) : currentScreen === Screen.ACHIEVEMENTS ? (
               <AchievementsScreen key="achievements-screen" stats={stats} onBack={() => setCurrentScreen(Screen.HOME)} onClaim={handleClaimAchievement} />
             ) : currentScreen === Screen.SOLITAIRE ? (
-levelData ? (
+              levelData ? (
                 <SolitaireGameMode 
                   key={`solitaire-${levelData.id}`}
                   levelData={levelData} 
@@ -1645,14 +1622,13 @@ levelData ? (
                     setStatus(GameStatus.WON);
                     setIsOverlayVisible(true);
                       
-                      // הנה השורה שהייתה חסרה!
-                      const hasPlayedTrial = localStorage.getItem('hasPlayedSolitaireTrial') === 'true';
-                      const eventActive = isEventTime(new Date());
-                      
-                      if (!eventActive && !hasPlayedTrial) {
-                        localStorage.setItem('hasPlayedSolitaireTrial', 'true');
+                    const hasPlayedTrial = localStorage.getItem('hasPlayedSolitaireTrial') === 'true';
+                    const eventActive = isEventTime(new Date());
+                    
+                    if (!eventActive && !hasPlayedTrial) {
+                      localStorage.setItem('hasPlayedSolitaireTrial', 'true');
                     }
-                        setCurrentScreen(Screen.PLAYING);
+                    setCurrentScreen(Screen.PLAYING);
                     
                     setStats(prev => {
                       const newStats = { ...prev, solitaireQuoteIndex: (prev.solitaireQuoteIndex || 0) + 1 };
@@ -1665,14 +1641,14 @@ levelData ? (
                     setStatus(GameStatus.LOST);
                     setIsOverlayVisible(true);
                     
-                      const hasPlayedTrial = localStorage.getItem('hasPlayedSolitaireTrial') === 'true';
-                      const eventActive = isEventTime(new Date());
-                      
-                      if (!eventActive && !hasPlayedTrial) {
-                        localStorage.setItem('hasPlayedSolitaireTrial', 'true');
+                    const hasPlayedTrial = localStorage.getItem('hasPlayedSolitaireTrial') === 'true';
+                    const eventActive = isEventTime(new Date());
+                    
+                    if (!eventActive && !hasPlayedTrial) {
+                      localStorage.setItem('hasPlayedSolitaireTrial', 'true');
                     }
-                      setCurrentScreen(Screen.PLAYING);
-                    }} 
+                    setCurrentScreen(Screen.PLAYING);
+                  }} 
                   hintsRemaining={stats.hintsRemaining}
                   onSpendHints={(amount) => {
                     if (stats.hintsRemaining >= amount) {

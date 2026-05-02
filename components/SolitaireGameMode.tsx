@@ -164,16 +164,24 @@ const SolitaireGameMode: React.FC<SolitaireGameModeProps> = ({
     setShowAuthorModal(false);
   }, [levelData, initGame]);
 
-  const handleCellSelect = useCallback((index: number) => {
-    if (levelData.revealedIndices && levelData.revealedIndices.includes(index)) return;
-    if (userState.cellGuesses[index]) return; // Already guessed correctly
+const handleCellSelect = useCallback((index: number) => {
+    // במשחק הרגיל: אם המשבצת כבר הייתה פתוחה מראש, חסמנו.
+    // אבל בסוליטייר אנחנו כן רוצים לתת למשתמש ללחוץ עליה כדי לסמן שאר תאים!
+    
+    // לכן - אנחנו תמיד מאפשרים לשנות את ה-selectedCellIndex
+    // הלוגיקה של "האם מותר להניח פה קלף" תיבדק כבר ב-handleCardClick
+    
     setUserState(prev => ({ ...prev, selectedCellIndex: index }));
-  }, [levelData, userState.cellGuesses]);
+  }, []);
 
   const handleCardClick = useCallback((poolIndex: number, letter: string) => {
     const { selectedCellIndex, cellGuesses, mistakes, maxMistakes } = userState;
     
     if (selectedCellIndex === null) return;
+    
+    if (cellGuesses[selectedCellIndex] || (levelData.revealedIndices && levelData.revealedIndices.includes(selectedCellIndex))) {
+      return; 
+    }
     
     const correctChar = levelData.quote[selectedCellIndex];
     

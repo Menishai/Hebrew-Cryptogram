@@ -105,6 +105,30 @@ export const QUOTES_DB: LocalQuote[] = [
   { quote: "מרחף כמו פרפר ועוקץ כמו דבורה", author: "מוחמד עליי", category: 'sports', difficulty: Difficulty.HARD },
   { quote: "לפעמים אתה מפסיד ולפעמים הקבוצה היריבה מנצחת", author: "אוטו ריהאגל", category: 'sports', difficulty: Difficulty.MEDIUM },
   { quote: "מאיר תירגע", author: "אבי רצון", category: 'sports', difficulty: Difficulty.MEDIUM },
+  // --- SPORTS CATEGORY (תוספות חדשות) ---
+  { quote: "אתה מחטיא מאה אחוז מהזריקות שאתה לא לוקח", author: "ויין גרצקי", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "כישרון מנצח משחקים אבל עבודת צוות מביאה אליפויות", author: "מייקל ג'ורדן", category: 'sports', difficulty: Difficulty.HARD },
+  { quote: "החטאתי מעל תשעת אלפים זריקות בקריירה שלי", author: "מייקל ג'ורדן", category: 'sports', difficulty: Difficulty.HARD },
+  { quote: "ההגנה הטובה ביותר היא ההתקפה", author: "קלישאת ספורט", category: 'sports', difficulty: Difficulty.EASY },
+  { quote: "השחקנים נתנו מאה ועשרים אחוז על המגרש", author: "קלישאת ספורט", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "כשאתה לא כובש אתה סופג", author: "קלישאת כדורגל", category: 'sports', difficulty: Difficulty.EASY },
+  { quote: "שחקנים גדולים באמת מופיעים למשחקים גדולים", author: "קלישאת ספורט", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "קשה לנצח אדם שמעולם לא מוותר", author: "בייב רות'", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "הכדורגלן הישראלי חייב לעשות שינוי של שלוש מאות שישים מעלות", author: "אלון מזרחי", category: 'sports', difficulty: Difficulty.VERY_HARD },
+  { quote: "אני לא חושב שאני גדול שחקני ישראל בכל הזמנים", author: "אלי אוחנה", category: 'sports', difficulty: Difficulty.HARD },
+  { quote: "אוי דוידוביץ", author: "מאיר איינשטיין", category: 'sports', difficulty: Difficulty.EASY, year: "2001" },
+  { quote: "השחקנים שתו לי את הדם בקשית", author: "שלמה שרף", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "אין שחקן שהוא גדול יותר מהמועדון", author: "קלישאת כדורגל", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "הרבה יותר קשה להישאר בפסגה מאשר להגיע אליה", author: "קלישאת ספורט", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "עשרים ושניים משוגעים רצים אחרי כדור אחד", author: "משפט עממי על כדורגל", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "בכדורגל תמיד יש את המשחק של שבוע הבא כדי לתקן", author: "ראיון אחרי הפסד", category: 'sports', difficulty: Difficulty.HARD },
+  { quote: "קודם כל ולפני הכל אנחנו צריכים להסתכל על עצמנו", author: "ראיון אחרי הפסד", category: 'sports', difficulty: Difficulty.HARD },
+  { quote: "באנו קטנים ונצא גדולים", author: "קלישאת ספורט ישראלית", category: 'sports', difficulty: Difficulty.EASY },
+  { quote: "אנחנו באים לשחק את המשחק הרגיל שלנו", author: "ראיון לפני משחק", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "הכל הוכרע על חודו של השפיץ של הנעל", author: "קלישאת כדורגל", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "קבוצה של גברים שנילחמו היום על המגרש", author: "ראיון אחרי ניצחון", category: 'sports', difficulty: Difficulty.MEDIUM },
+  { quote: "אל תשאל מה חבריך לקבוצה יכולים לעשות למענך", author: "מג'יק ג'ונסון", category: 'sports', difficulty: Difficulty.HARD },
+  { quote: "היה חסר לנו הגרוש ללירה", author: "קלישאת ספורט", category: 'sports', difficulty: Difficulty.EASY },
 
   // --- CINEMA & TV CATEGORY (קולנוע וטלוויזיה) ---
   { quote: "גבעת חלפון אינה עונה", author: "ויקטור חסון", category: 'cinema', difficulty: Difficulty.EASY, year: "1976" },
@@ -150,4 +174,35 @@ export const QUOTES_DB: LocalQuote[] = [
   { quote: "מה קורה דוקטור", author: "באגס באני", category: 'cinema', difficulty: Difficulty.HARD },
   { quote: "האקונה מטטה", author: "קזבלנקה", category: 'cinema', difficulty: Difficulty.EASY, year: "1994" },
   { quote: "כשאתה צריך לירות תירה אל תדבר", author: "הטוב, הרע והמכוער", category: 'cinema', difficulty: Difficulty.VERY_HARD, year: "1966" },
+
+  // --- CINEMA & TV CATEGORY (תוספות חדשות) ---
+  // ישראלי וקאלט מקומי
+  { quote: "סבתא חיה מתה", author: "מבצע סבתא", category: 'cinema', difficulty: Difficulty.EASY, year: "1999" },
+  { quote: "אתה מתחיל הכי מהר שלך ולאט לאט מגביר", author: "מבצע סבתא", category: 'cinema', difficulty: Difficulty.HARD, year: "1999" },
+  { quote: "מי מתעסק זה מיקו", author: "צ'רלי וחצי", category: 'cinema', difficulty: Difficulty.EASY, year: "1974" },
+  { quote: "שעה, שעה שאני מחפש את הים", author: "גבעת חלפון אינה עונה", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "1976" },
+  { quote: "טעות, טועים, טעינו", author: "גבעת חלפון אינה עונה", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "1976" },
+  { quote: "אני פה בגלל אשתי", author: "הגשש החיוור", category: 'cinema', difficulty: Difficulty.EASY },
+  { quote: "המשטרה כולה דמיקולו", author: "השוטר אזולאי", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "1971" },
+  { quote: "יש לי יש לי יש לי", author: "הקומדי סטור", category: 'cinema', difficulty: Difficulty.EASY },
+
+  // סדרות טלוויזיה בינלאומיות
+  { quote: "היינו בהפסקה", author: "רוס גלר חברים", category: 'cinema', difficulty: Difficulty.EASY, year: "1997" },
+  { quote: "החורף קרב", author: "משחקי הכס", category: 'cinema', difficulty: Difficulty.EASY, year: "2011" },
+  { quote: "במשחקי הכס אתה מנצח או שאתה מת", author: "משחקי הכס", category: 'cinema', difficulty: Difficulty.HARD, year: "2011" },
+  { quote: "אני לא בסכנה אני הסכנה", author: "וולטר ווייט שובר שורות", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "2011" },
+  { quote: "תגיד את השם שלי", author: "וולטר ווייט שובר שורות", category: 'cinema', difficulty: Difficulty.EASY, year: "2012" },
+  { quote: "זה יהיה אגדי", author: "ברני סטינסון איך פגשתי את אמא", category: 'cinema', difficulty: Difficulty.MEDIUM },
+  { quote: "זה מה שהיא אמרה", author: "מייקל סקוט המשרד", category: 'cinema', difficulty: Difficulty.MEDIUM },
+
+  // קולנוע עולמי ואנימציה
+  { quote: "עד האינסוף ומעבר לו", author: "באז שנות אור צעצוע של סיפור", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "1995" },
+  { quote: "רוץ פורסט רוץ", author: "פורסט גאמפ", category: 'cinema', difficulty: Difficulty.EASY, year: "1994" },
+  { quote: "הראו לי את הכסף", author: "ג'רי מגווייר", category: 'cinema', difficulty: Difficulty.EASY, year: "1996" },
+  { quote: "אף אחד לא מושלם", author: "חמים וטעים", category: 'cinema', difficulty: Difficulty.EASY, year: "1959" },
+  { quote: "אני מת על הריח של נאפאלם על הבוקר", author: "אפוקליפסה עכשיו", category: 'cinema', difficulty: Difficulty.HARD, year: "1979" },
+  { quote: "שמור את העודף חיה מטונפת", author: "שכחו אותי בבית", category: 'cinema', difficulty: Difficulty.HARD, year: "1990" },
+  { quote: "הנה ג'וני", author: "הניצוץ", category: 'cinema', difficulty: Difficulty.EASY, year: "1980" },
+  { quote: "רק תמשיך לשחות", author: "דורי מוצאים את נמו", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "2003" },
+  { quote: "אחרי כל הזמן הזה תמיד", author: "סוורוס סנייפ הארי פוטר", category: 'cinema', difficulty: Difficulty.MEDIUM, year: "2011" },
 ];

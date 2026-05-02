@@ -73,6 +73,8 @@ export interface Statistics {
     author?: number;
     locked?: number;
   };
+decodedLettersStats?: Record<string, number>;
+  
   // Purchases
   isAdFree?: boolean;
   isSkipAnytimePurchased?: boolean;
