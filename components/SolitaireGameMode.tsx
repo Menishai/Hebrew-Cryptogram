@@ -290,7 +290,7 @@ const handleCellSelect = useCallback((index: number) => {
       </div>
 
       {/* Header Area */}
-      <div className="flex items-center justify-between p-4 bg-indigo-950/50 backdrop-blur-md border-b border-white/10 shrink-0 z-10 relative">
+      <div className="flex items-center justify-between px-4 pb-4 bg-indigo-950/50 backdrop-blur-md border-b border-white/10 shrink-0 z-10 relative safe-solitaire-header-spacing">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-colors">
             <i className="fa-solid fa-arrow-right"></i>

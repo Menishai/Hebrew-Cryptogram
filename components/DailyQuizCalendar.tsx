@@ -118,7 +118,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
         </div>
       )}
 
-      <div className="w-full flex items-center justify-between p-4 md:p-6 bg-white border-b border-slate-200 flex-shrink-0 z-20">
+      <div className="w-full flex items-center justify-between px-4 pb-4 md:px-6 md:pb-6 bg-white border-b border-slate-200 flex-shrink-0 z-20 safe-daily-quiz-header-spacing">
         <button onClick={onBack} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-800 border border-slate-200 shadow-sm transition-transform active:scale-95">
           <i className="fa-solid fa-arrow-right"></i>
         </button>

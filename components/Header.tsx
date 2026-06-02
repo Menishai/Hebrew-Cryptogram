@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 bg-white shadow-sm border-b border-gray-100 shrink-0 z-10" dir="rtl">
+    <header className="flex items-center justify-between px-4 pb-3 md:px-6 md:pb-4 bg-white shadow-sm border-b border-gray-100 shrink-0 z-10 safe-header-spacing" dir="rtl">
       {/* כפתורי ניהול וניווט */}
       <div className="flex items-center space-x-2 space-x-reverse">
         {onBack && (

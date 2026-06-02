@@ -39,7 +39,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-100/30 blur-[100px] rounded-full"></div>
 
       {/* Floating Action Buttons Area (Top Right) */}
-      <div className="absolute top-6 right-6 flex flex-col gap-3 z-10">
+      <div className="absolute flex flex-col gap-3 z-10 safe-mainmenu-top-right">
         <button 
           onClick={onShowTutorial}
           className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-50 transition-all active:scale-95"
@@ -55,9 +55,9 @@ const MainMenu: React.FC<MainMenuProps> = ({
           <i className="fa-solid fa-cart-shopping text-lg md:text-xl"></i>
         </button>
       </div>
-
+ 
       {/* Floating Action Buttons Area (Top Left) */}
-      <div className="absolute top-6 left-6 z-30 flex flex-col gap-3 items-center">
+      <div className="absolute z-30 flex flex-col gap-3 items-center safe-mainmenu-top-left">
         <button 
           onClick={onDailyQuiz}
           className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm border border-rose-100 hover:bg-rose-50 transition-all active:scale-95 group relative"
@@ -176,7 +176,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       <div className="mt-12 md:mt-16 flex flex-col items-center gap-2 opacity-50">
-        <p className="text-slate-500 text-[11px] md:text-[12px] font-black uppercase tracking-widest">Version 1.8</p>
+        <p className="text-slate-500 text-[11px] md:text-[12px] font-black uppercase tracking-widest">Version 1.81</p>
       </div>
     </div>
   );

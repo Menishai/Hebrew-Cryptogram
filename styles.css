@@ -104,3 +104,57 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Safe Area Spacing Helpers for iPhone Notch/Dynamic Island & Android 15 Edge-to-Edge */
+.safe-header-spacing {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem) !important;
+}
+@media (min-width: 768px) {
+    .safe-header-spacing {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+    }
+}
+
+.safe-solitaire-header-spacing {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+}
+
+.safe-large-header-spacing {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem) !important;
+}
+
+.safe-daily-quiz-header-spacing {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+}
+@media (min-width: 768px) {
+    .safe-daily-quiz-header-spacing {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem) !important;
+    }
+}
+
+.safe-stats-header-spacing {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+}
+@media (min-width: 768px) {
+    .safe-stats-header-spacing {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem) !important;
+    }
+}
+
+.safe-settings-padding {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+}
+@media (min-width: 768px) {
+    .safe-settings-padding {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem) !important;
+    }
+}
+
+.safe-mainmenu-top-right {
+    top: calc(env(safe-area-inset-top, 0px) + 1.5rem) !important;
+    right: 1.5rem !important;
+}
+.safe-mainmenu-top-left {
+    top: calc(env(safe-area-inset-top, 0px) + 1.5rem) !important;
+    left: 1.5rem !important;
+}

@@ -147,7 +147,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   return (
     <div 
-      className="flex flex-col items-center h-full p-4 md:p-6 bg-slate-50 overflow-y-auto" 
+      className="flex flex-col items-center h-full pb-4 px-4 md:pb-6 md:px-6 bg-slate-50 overflow-y-auto safe-settings-padding" 
       dir="rtl"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}

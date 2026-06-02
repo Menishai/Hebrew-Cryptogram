@@ -411,7 +411,7 @@ const renderCategoryCard = (cat: AchievementCategory) => {
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-5 flex-shrink-0 bg-white shadow-sm z-10 border-b border-slate-200">
+      <div className="flex items-center justify-between px-6 pb-5 flex-shrink-0 bg-white shadow-sm z-10 border-b border-slate-200 safe-large-header-spacing">
         <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-slate-800 border border-slate-200 hover:bg-gray-100 transition-transform active:scale-95">
           <i className="fa-solid fa-arrow-right"></i>
         </button>
