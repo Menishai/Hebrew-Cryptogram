@@ -9,8 +9,8 @@ interface DailyQuizCalendarProps {
 }
 
 const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress, initialMonth }) => {
-  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3, May = 4
-  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(4, currentRealMonth));
+  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3, May = 4, June = 5, July = 6
+  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(6, currentRealMonth));
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [lockedDateSelected, setLockedDateSelected] = useState<boolean>(false);
   const [timeToNextQuiz, setTimeToNextQuiz] = useState<string>('');
@@ -19,7 +19,9 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
     { name: 'פברואר', days: 28, value: 1 },
     { name: 'מרץ', days: 31, value: 2 },
     { name: 'אפריל', days: 30, value: 3 },
-    { name: 'מאי', days: 31, value: 4 }
+    { name: 'מאי', days: 31, value: 4 },
+    { name: 'יוני', days: 30, value: 5 },
+    { name: 'יולי', days: 31, value: 6 }
   ];
 
   const currentMonthData = months.find(m => m.value === selectedMonth) || months[0];
@@ -84,7 +86,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   };
 
   const nextMonth = () => {
-    if (selectedMonth < 4) setSelectedMonth(selectedMonth + 1);
+    if (selectedMonth < 6) setSelectedMonth(selectedMonth + 1);
   };
 
   const prevMonth = () => {
@@ -135,7 +137,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
              <p className="text-[16px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
              <button 
               onClick={nextMonth} 
-              disabled={selectedMonth === 4}
+              disabled={selectedMonth === 6}
               className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
              >
                <i className="fa-solid fa-chevron-left text-xl"></i>
