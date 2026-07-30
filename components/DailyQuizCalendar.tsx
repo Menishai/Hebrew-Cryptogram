@@ -9,8 +9,8 @@ interface DailyQuizCalendarProps {
 }
 
 const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectDate, dailyProgress, initialMonth }) => {
-  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3, May = 4, June = 5, July = 6
-  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(6, currentRealMonth));
+  const currentRealMonth = new Date().getMonth(); // Feb = 1, March = 2, April = 3, May = 4, June = 5, July = 6, Aug = 7, Sept = 8
+  const defaultMonth = initialMonth !== undefined ? initialMonth : Math.max(1, Math.min(8, currentRealMonth));
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [lockedDateSelected, setLockedDateSelected] = useState<boolean>(false);
   const [timeToNextQuiz, setTimeToNextQuiz] = useState<string>('');
@@ -21,7 +21,9 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
     { name: 'אפריל', days: 30, value: 3 },
     { name: 'מאי', days: 31, value: 4 },
     { name: 'יוני', days: 30, value: 5 },
-    { name: 'יולי', days: 31, value: 6 }
+    { name: 'יולי', days: 31, value: 6 },
+    { name: 'אוגוסט', days: 31, value: 7 },
+    { name: 'ספטמבר', days: 30, value: 8 }
   ];
 
   const currentMonthData = months.find(m => m.value === selectedMonth) || months[0];
@@ -86,7 +88,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
   };
 
   const nextMonth = () => {
-    if (selectedMonth < 6) setSelectedMonth(selectedMonth + 1);
+    if (selectedMonth < 8) setSelectedMonth(selectedMonth + 1);
   };
 
   const prevMonth = () => {
@@ -137,7 +139,7 @@ const DailyQuizCalendar: React.FC<DailyQuizCalendarProps> = ({ onBack, onSelectD
              <p className="text-[16px] text-blue-600 font-black uppercase tracking-widest min-w-[100px]">{currentMonthData.name} 2026</p>
              <button 
               onClick={nextMonth} 
-              disabled={selectedMonth === 6}
+              disabled={selectedMonth === 8}
               className={`text-slate-400 hover:text-blue-500 disabled:opacity-20 transition-colors`}
              >
                <i className="fa-solid fa-chevron-left text-xl"></i>

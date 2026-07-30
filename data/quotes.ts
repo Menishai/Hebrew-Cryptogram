@@ -46,6 +46,8 @@ export const QUOTES_DB: LocalQuote[] = [
   { quote: "יהי כבוד חברך חביב עליך כשלך.", author: "פרקי אבות", category: 'source', difficulty: Difficulty.MEDIUM },
   { quote: "אליה, וקוץ בה.", author: "התלמוד", category: 'source', difficulty: Difficulty.MEDIUM },
   { quote: "ארץ זבת חלב ודבש.", author: "ספר שמות", category: 'source', difficulty: Difficulty.MEDIUM },
+  { quote: "מצא אישה מצא טוב, ויפק רצון מה'.", author: "ספר משלי", category: 'source', difficulty: Difficulty.MEDIUM },
+
 
   // --- HARD (Aramaic, Longer, Deep Sources) ---
   { quote: "סייג לחוכמה – שתיקה.", author: "רבי עקיבא", category: 'source', difficulty: Difficulty.HARD, year: "תקופת התנאים" },
@@ -61,6 +63,11 @@ export const QUOTES_DB: LocalQuote[] = [
   { quote: "אם בארזים נפלה שלהבת, מה יעשו אזובי קיר?", author: "התלמוד", category: 'source', difficulty: Difficulty.HARD },
   { quote: "אין הביישן למד, ואין הקפדן מלמד.", author: "הלל הזקן, מסכת אבות", category: 'source', difficulty: Difficulty.HARD },
   { quote: "בנים גידלתי ורוממתי, והם פשעו בי.", author: "ישעיהו", category: 'source', difficulty: Difficulty.HARD },
+  { quote: "על שלושה דברים העולם עומד: על הדין, ועל האמת, ועל השלום.", author: "רבן שמעון בן גמליאל", category: 'source', difficulty: Difficulty.HARD },
+  { quote: "לחם סתרים ינעם, ומים גנובים ימתקו.", author: "ספר משלי", category: 'source', difficulty: Difficulty.HARD },
+  { quote: "מרבה תורה מרבה חיים, מרבה ישיבה מרבה חכמה.", author: "הלל הזקן", category: 'source', difficulty: Difficulty.HARD },
+  { quote: "אל תפרוש מן הציבור, ואל תאמין בעצמך עד יום מותך.", author: "הלל הזקן", category: 'source', difficulty: Difficulty.HARD },
+
 
   // --- VERY_HARD (Complex Aramaic, Rare Proverbs, Longer Ancient Texts) ---
   { quote: "מאיגרא רמא – לבירא עמיקתא.", author: "חז״ל", category: 'source', difficulty: Difficulty.VERY_HARD, year: "ארמית - תקופת התלמוד" },
@@ -70,6 +77,9 @@ export const QUOTES_DB: LocalQuote[] = [
   { quote: "אל תדין את חברך, עד שתגיע למקומו.", author: "הלל הזקן", category: 'source', difficulty: Difficulty.VERY_HARD },
   { quote: "מרבה נכסים, מרבה דאגה.", author: "פרקי אבות", category: 'source', difficulty: Difficulty.VERY_HARD },
   { quote: "אשת חיל מי ימצא?", author: "משלי", category: 'source', difficulty: Difficulty.VERY_HARD },
+  { quote: "ארבעה אבות נזיקין: השור, והבור, והמבעה, וההבער.", author: "משנה בבא קמא", category: 'source', difficulty: Difficulty.VERY_HARD },
+  { quote: "מעוות לא יוכל לתקון, וחיסרון לא יוכל להימנות.", author: "ספר קהלת", category: 'source', difficulty: Difficulty.VERY_HARD },
+
 
   // --- SPORTS CATEGORY (ספורט) ---
   { quote: "ככה לא בונים חומה!", author: "יורם ארבל", category: 'sports', difficulty: Difficulty.MEDIUM, year: "1989" },
